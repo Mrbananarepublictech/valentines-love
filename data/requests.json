@@ -1,0 +1,32 @@
+[
+    {
+        "id": 1,
+        "from": "mtydgf",
+        "to": "mrbanana566",
+        "message": "hey how are u",
+        "status": "accepted",
+        "response_message": "",
+        "sent_at": "2026-02-05T16:01:49.334552",
+        "responded_at": "2026-02-05T16:02:36.691443"
+    },
+    {
+        "id": 2,
+        "from": "mrbanana566",
+        "to": "mtydgf",
+        "message": "will you be my val",
+        "status": "accepted",
+        "response_message": "yes",
+        "sent_at": "2026-02-05T16:23:12.797343",
+        "responded_at": "2026-02-05T16:26:48.601091"
+    },
+    {
+        "id": 3,
+        "from": "rose",
+        "to": "mrbanana566",
+        "message": "hello am new here",
+        "status": "pending",
+        "response_message": "",
+        "sent_at": "2026-02-05T17:47:08.896204",
+        "responded_at": null
+    }
+]

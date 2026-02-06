@@ -1,0 +1,22 @@
+[
+    {
+        "follower": "mtydgf",
+        "following": "mrbanana566",
+        "followed_at": "2026-02-05T17:24:09.173402"
+    },
+    {
+        "follower": "rose",
+        "following": "mrbanana566",
+        "followed_at": "2026-02-05T17:46:02.516125"
+    },
+    {
+        "follower": "mrbanana566",
+        "following": "rose",
+        "followed_at": "2026-02-05T17:55:51.005083"
+    },
+    {
+        "follower": "mrbanana5",
+        "following": "mrbanana566",
+        "followed_at": "2026-02-05T18:34:26.312810"
+    }
+]

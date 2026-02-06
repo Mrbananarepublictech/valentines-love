@@ -1,0 +1,28 @@
+# Virtual Environment
+.venv/
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.pyc
+__pycache__/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Uploads
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Database
+*.db
+*.sqlite

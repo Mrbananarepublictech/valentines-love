@@ -1,0 +1,20 @@
+[
+    {
+        "id": 1,
+        "from": "mrbanana566",
+        "to": "mtydgf",
+        "template_id": 2,
+        "message": "i love you",
+        "created_at": "2026-02-05T16:04:41.873361",
+        "viewed": true
+    },
+    {
+        "id": 2,
+        "from": "mtydgf",
+        "to": "mrbanana566",
+        "template_id": 1,
+        "message": "hello",
+        "created_at": "2026-02-05T16:54:32.375664",
+        "viewed": true
+    }
+]

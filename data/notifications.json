@@ -1,0 +1,65 @@
+[
+    {
+        "id": 1,
+        "type": "like",
+        "from": "mtydgf",
+        "to": "mrbanana566",
+        "message": "mtydgf liked you! \ud83d\udc95",
+        "created_at": "2026-02-05T17:23:48.670405",
+        "read": true
+    },
+    {
+        "id": 2,
+        "type": "follow",
+        "from": "mtydgf",
+        "to": "mrbanana566",
+        "message": "mtydgf started following you",
+        "created_at": "2026-02-05T17:24:09.174580",
+        "read": true
+    },
+    {
+        "id": 3,
+        "type": "follow",
+        "from": "rose",
+        "to": "mrbanana566",
+        "message": "rose started following you",
+        "created_at": "2026-02-05T17:46:02.520190",
+        "read": true
+    },
+    {
+        "id": 4,
+        "type": "like",
+        "from": "rose",
+        "to": "mrbanana566",
+        "message": "rose liked you! \ud83d\udc95",
+        "created_at": "2026-02-05T17:46:36.681963",
+        "read": true
+    },
+    {
+        "id": 5,
+        "type": "follow",
+        "from": "mrbanana566",
+        "to": "rose",
+        "message": "mrbanana566 started following you",
+        "created_at": "2026-02-05T17:55:51.008775",
+        "read": true
+    },
+    {
+        "id": 6,
+        "type": "follow",
+        "from": "mrbanana5",
+        "to": "mrbanana566",
+        "message": "mrbanana5 started following you",
+        "created_at": "2026-02-05T18:34:26.318528",
+        "read": true
+    },
+    {
+        "id": 7,
+        "type": "like",
+        "from": "mrbanana5",
+        "to": "mrbanana566",
+        "message": "mrbanana5 liked you! \ud83d\udc95",
+        "created_at": "2026-02-05T18:34:37.530414",
+        "read": true
+    }
+]

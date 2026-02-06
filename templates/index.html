@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentine's Love Request 💕</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff1744 0%, #f50057 50%, #c51162 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            animation: slideUp 0.6s ease-in-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ff1744;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #999;
+            margin-bottom: 30px;
+            font-size: 0.9em;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ff1744;
+            box-shadow: 0 0 10px rgba(255, 23, 68, 0.2);
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 23, 68, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #ff1744;
+            border: 2px solid #ff1744;
+        }
+
+        .btn-secondary:hover {
+            background: #ffe0e0;
+        }
+
+        .btn-secondary.active {
+            background: #ff1744;
+            color: white;
+        }
+
+        .message {
+            text-align: center;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+            animation: slideDown 0.4s ease-in-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .form-section {
+            display: none;
+        }
+
+        .form-section.active {
+            display: block;
+            animation: slideUp 0.4s ease-in-out;
+        }
+
+        .divider {
+            text-align: center;
+            color: #999;
+            margin: 20px 0;
+            font-size: 0.9em;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #ff1744;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f0f0f0;
+            border-top: 3px solid #ff1744;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .heart-animation {
+            position: fixed;
+            pointer-events: none;
+            font-size: 2em;
+            animation: floatUp 2s ease-in forwards;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-100px) scale(0.5);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 30px 20px;
+            }
+
+            h1 {
+                font-size: 1.6em;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="logo">💕</div>
+            <h1>Valentine's Love</h1>
+            <p class="subtitle">Ask someone to be your Valentine!</p>
+
+            <div class="message" id="message"></div>
+
+            <div class="button-group">
+                <button class="btn-secondary active" onclick="switchTab('login')">Login</button>
+                <button class="btn-secondary" onclick="switchTab('register')">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <div id="login" class="form-section active">
+                <form onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="login-username">Username</label>
+                        <input type="text" id="login-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password</label>
+                        <input type="password" id="login-password" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">
+                        Login
+                    </button>
+                </form>
+            </div>
+
+            <!-- Register Form -->
+            <div id="register" class="form-section">
+                <form onsubmit="handleRegister(event)">
+                    <div class="form-group">
+                        <label for="register-username">Username</label>
+                        <input type="text" id="register-username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email">Email</label>
+                        <input type="email" id="register-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password">Password</label>
+                        <input type="password" id="register-password" required>
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">
+                        Create Account
+                    </button>
+                </form>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function switchTab(tab) {
+            document.querySelectorAll('.form-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+
+            document.querySelectorAll('.btn-secondary').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+        }
+
+        function showMessage(message, type) {
+            const el = document.getElementById('message');
+            el.textContent = message;
+            el.className = 'message show ' + type;
+            setTimeout(() => el.classList.remove('show'), 4000);
+        }
+
+        function createHeartAnimation(e) {
+            const hearts = ['💖', '💕', '💗', '❤️'];
+            const heart = document.createElement('div');
+            heart.className = 'heart-animation';
+            heart.innerHTML = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.style.left = (e?.clientX || Math.random() * 100) + 'px';
+            heart.style.top = (e?.clientY || Math.random() * 100) + 'px';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 2000);
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('✨ Logged in successfully!', 'success');
+                    createHeartAnimation();
+                    setTimeout(() => {
+                        window.location.href = '/dashboard';
+                    }, 1000);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred. Please try again.', 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const username = document.getElementById('register-username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+
+            document.getElementById('loading').style.display = 'block';
+
+            try {
+                const response = await fetch('/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('✨ Account created! Please join our WhatsApp channel.', 'success');
+                    createHeartAnimation();
+                    // Show WhatsApp join modal
+                    showWhatsAppModal();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('An error occurred. Please try again.', 'error');
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        function showWhatsAppModal() {
+            let modal = document.getElementById('whatsappModal');
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = 'whatsappModal';
+                modal.style.position = 'fixed';
+                modal.style.top = '0';
+                modal.style.left = '0';
+                modal.style.width = '100vw';
+                modal.style.height = '100vh';
+                modal.style.background = 'rgba(0,0,0,0.6)';
+                modal.style.display = 'flex';
+                modal.style.alignItems = 'center';
+                modal.style.justifyContent = 'center';
+                modal.style.zIndex = '9999';
+                modal.innerHTML = `
+                    <div style="background: white; border-radius: 16px; padding: 32px 24px; max-width: 350px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,0.2);">
+                        <h2 style="color: #25D366; margin-bottom: 16px;">Join Our WhatsApp Channel</h2>
+                        <p style="margin-bottom: 20px; color: #333;">Stay updated and connect with our community!<br><b>Click below to join:</b></p>
+                        <a href="https://whatsapp.com/channel/0029VbCbjntKQuJDTeE1rT0h" target="_blank" style="display: inline-block; background: #25D366; color: white; font-weight: bold; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 1.1em; margin-bottom: 16px;">Join WhatsApp Channel</a><br>
+                        <button onclick="document.getElementById('whatsappModal').remove(); window.location.href='/dashboard';" style="margin-top: 10px; padding: 8px 20px; border: none; border-radius: 8px; background: #ff1744; color: white; font-weight: 600; cursor: pointer;">Continue to Dashboard</button>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+        }
+    </script>
+</body>
+</html>

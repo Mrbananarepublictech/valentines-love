@@ -1,0 +1,2278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentine's Dashboard 💕</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #ff1744 0%, #f50057 50%, #c51162 100%);
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        .header {
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+        }
+
+        .logout-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: white;
+            color: #ff1744;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .profile-container {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 20px;
+            align-items: start;
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .profile-picture-upload {
+            position: relative;
+            width: 120px;
+            height: 120px;
+        }
+
+        .profile-picture-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #ff1744;
+            background: #f0f0f0;
+        }
+
+        .picture-upload-label {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #ff1744;
+            color: white;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s;
+        }
+
+        .picture-upload-label:hover {
+            transform: scale(1.1);
+        }
+
+        #pictureInput {
+            display: none;
+        }
+
+        .profile-info {
+            flex: 1;
+        }
+
+        .profile-info h2 {
+            color: #ff1744;
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .profile-info p {
+            color: #666;
+            margin: 5px 0;
+        }
+
+        .bio-section {
+            margin-top: 15px;
+        }
+
+        .bio-section textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 10px;
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            font-family: inherit;
+            resize: vertical;
+        }
+
+        .bio-section button {
+            margin-top: 10px;
+            padding: 8px 15px;
+            background: #ff1744;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .bio-section button:hover {
+            background: #f50057;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-tab.active {
+            background: white;
+            color: #ff1744;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .gift-card, .result-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .gift-card:hover, .result-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 7px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .gift-emoji, .card-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .gift-card h3, .result-card h4 {
+            color: #ff1744;
+            margin-bottom: 5px;
+        }
+
+        .gift-card p, .result-card p {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .result-card.selected {
+            background: #ffe0e0;
+            border: 2px solid #ff1744;
+        }
+
+        .message-chat {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            height: 400px;
+            display: flex;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        .messages-list {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            scroll-behavior: smooth;
+        }
+
+        .message-item {
+            margin: 10px 0;
+            padding: 10px 15px;
+            border-radius: 8px;
+            max-width: 70%;
+            word-wrap: break-word;
+        }
+
+        .message-item.sent {
+            background: #ff1744;
+            color: white;
+            margin-left: auto;
+        }
+
+        .message-item.received {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .message-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .message-input input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        .message-input button {
+            padding: 10px 20px;
+            background: #ff1744;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .message-input button:hover {
+            background: #f50057;
+        }
+
+        .card-template {
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 10px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .card-template:hover {
+            border-color: #ff1744;
+            transform: scale(1.02);
+        }
+
+        .card-template.selected {
+            border-color: #ff1744;
+            background: #ffe0e0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .empty-state h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+
+        .message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            animation: slideDown 0.4s ease-in-out;
+        }
+
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .request-card {
+            background: white;
+            border-left: 5px solid #ff1744;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .request-card.accepted {
+            border-left-color: #4caf50;
+            background: #f1f8f4;
+        }
+
+        .request-card.rejected {
+            border-left-color: #f44336;
+            background: #fef1f0;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        .status-badge.accepted {
+            background: #4caf50;
+            color: white;
+        }
+
+        .status-badge.rejected {
+            background: #f44336;
+            color: white;
+        }
+
+        .status-badge.pending {
+            background: #ff9800;
+            color: white;
+        }
+
+        .heart-animation {
+            position: fixed;
+            pointer-events: none;
+            font-size: 2em;
+            animation: floatUp 2s ease-in forwards;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-100px) scale(0.5); }
+        }
+
+        @media (max-width: 768px) {
+            .profile-container {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .message-item {
+                max-width: 100%;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        .social-share {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .social-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            color: white;
+            font-size: 0.85em;
+            transition: all 0.3s;
+        }
+
+        .social-btn.facebook { background: #1877f2; }
+        .social-btn.facebook:hover { background: #0a66c2; }
+        .social-btn.instagram { background: #e4405f; }
+        .social-btn.instagram:hover { background: #d03860; }
+
+        .analytics-card {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .analytics-card h4 {
+            color: #ff1744;
+            margin-bottom: 10px;
+        }
+
+        .analytics-card .number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .theme-option {
+            padding: 10px;
+            border: 2px solid #f0f0f0;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .theme-option:hover {
+            border-color: #ff1744;
+            transform: scale(1.05);
+        }
+
+        .theme-option.selected {
+            border-color: #ff1744;
+            background: #ffe0e0;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-in-out;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            color: #ff1744;
+            font-size: 1.5em;
+            margin: 0;
+        }
+
+        .modal-close {
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #999;
+            border: none;
+            background: none;
+            transition: all 0.3s;
+        }
+
+        .modal-close:hover {
+            color: #ff1744;
+        }
+
+        .modal-body {
+            margin-bottom: 20px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .profile-action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.75em;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-report {
+            background: #ff9800;
+            color: white;
+        }
+
+        .btn-report:hover {
+            background: #e68900;
+        }
+
+        .btn-block {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-block:hover {
+            background: #da190b;
+        }
+
+        .settings-section {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .settings-section h4 {
+            color: #ff1744;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .settings-item:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item label {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #333;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .settings-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #ff1744;
+        }
+
+        .blocked-user-item {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            border-left: 4px solid #f44336;
+        }
+
+        .blocked-user-item strong {
+            color: #333;
+        }
+
+        .btn-unblock {
+            background: #4caf50;
+            color: white;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.3s;
+        }
+
+        .btn-unblock:hover {
+            background: #45a049;
+        }
+
+        .empty-blocked-list {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>💕 Valentine's Love</h1>
+        <div style="display: flex; gap: 15px; align-items: center;">
+            <span id="notificationBadge" style="background: #ff1744; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9em; font-weight: 600; display: none;"></span>
+            <a href="/admin" id="adminLink" style="background: rgba(255,255,255,0.3); color: white; padding: 8px 15px; border-radius: 25px; text-decoration: none; font-weight: 600; display: none; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.5)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">🔐 Admin Dashboard</a>
+            <a href="/logout" class="logout-btn">Logout</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Profile Section -->
+        <div class="profile-container" id="profileContainer"></div>
+
+        <!-- Tab Navigation -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('send')">💌 Send Request</button>
+            <button class="nav-tab" onclick="switchTab('received')">📬 Received</button>
+            <button class="nav-tab" onclick="switchTab('sent')">📤 Sent</button>
+            <button class="nav-tab" onclick="switchTab('discover')">🌟 Discover</button>
+            <button class="nav-tab" onclick="switchTab('follow')">👥 Follow</button>
+            <button class="nav-tab" onclick="switchTab('likes')">💕 Likes</button>
+            <button class="nav-tab" onclick="switchTab('notifications')">🔔 Notifications</button>
+            <button class="nav-tab" onclick="switchTab('analytics')">📊 Analytics</button>
+            <button class="nav-tab" onclick="switchTab('gifts')">🎁 Gift Ideas</button>
+            <button class="nav-tab" onclick="switchTab('cards')">🎨 Cards</button>
+            <button class="nav-tab" onclick="switchTab('messages')">💬 Messages</button>
+            <button class="nav-tab" onclick="switchTab('settings')">⚙️ Settings</button>
+        </div>
+
+        <!-- Messages -->
+                <!-- Discover Tab -->
+                <div id="discover" class="tab-content">
+                    <div class="card">
+                        <h3 style="color: #ff1744; margin-bottom: 20px;">🌟 Discover New People</h3>
+                        <input type="text" id="discoverSearchInput" placeholder="Search by username, bio, or email..." onkeyup="searchDiscoverUsers()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
+                        <div class="grid-2" id="discoverResults"></div>
+                    </div>
+                </div>
+        <div id="message"></div>
+
+        <!-- Send Request Tab -->
+        <div id="send" class="tab-content active">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">🔍 Find Someone Special</h3>
+                <input type="text" id="searchInput" placeholder="Search by username..." onkeyup="searchUsers()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
+                <div class="grid-2" id="searchResults"></div>
+                <div id="messageForm" style="display: none;">
+                    <h3 style="color: #ff1744; margin: 20px 0 15px 0;">💌 Write Your Message</h3>
+                    <textarea id="messageText" placeholder="Write a romantic message..." style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit; margin-bottom: 15px;"></textarea>
+                    <button class="btn-primary" onclick="sendRequest()" style="width: 100%;">Send Request</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Received Requests Tab -->
+        <div id="received" class="tab-content">
+            <div id="receivedRequests"></div>
+        </div>
+
+        <!-- Sent Requests Tab -->
+        <div id="sent" class="tab-content">
+            <div id="sentRequests"></div>
+        </div>
+
+        <!-- Follow Tab -->
+        <div id="follow" class="tab-content">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">👥 Find Users to Follow</h3>
+                <input type="text" id="followSearchInput" placeholder="Search by username..." onkeyup="searchUsersToFollow()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
+                <div class="grid-2" id="followSearchResults"></div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">📊 Your Network</h3>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px;">
+                        <div style="font-size: 2em; color: #ff1744; font-weight: bold;" id="followerCount">0</div>
+                        <div style="color: #666; font-size: 0.9em;">Followers</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px;">
+                        <div style="font-size: 2em; color: #ff1744; font-weight: bold;" id="followingCount">0</div>
+                        <div style="color: #666; font-size: 0.9em;">Following</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px;">
+                        <div style="font-size: 2em; color: #ff1744; font-weight: bold;" id="likesCount">0</div>
+                        <div style="color: #666; font-size: 0.9em;">Likes</div>
+                    </div>
+                </div>
+                <div>
+                    <h4 style="color: #333; margin-bottom: 10px;">🤍 You are following:</h4>
+                    <div id="followingList"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Likes Tab -->
+        <div id="likes" class="tab-content">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">💕 Users Who Like You</h3>
+                <div id="likesList"></div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">❤️ Find Someone to Like</h3>
+                <input type="text" id="likeSearchInput" placeholder="Search by username..." onkeyup="searchUsersToLike()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
+                <div class="grid-2" id="likeSearchResults"></div>
+            </div>
+        </div>
+
+        <!-- Notifications Tab -->
+        <div id="notifications" class="tab-content">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">🔔 Your Notifications</h3>
+                <div id="notificationsList"></div>
+            </div>
+        </div>
+
+        <!-- Analytics Tab -->
+        <div id="analytics" class="tab-content">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">📊 Your Activity Analytics</h3>
+                <div class="grid-2" id="analyticsList">
+                    <div class="analytics-card">
+                        <h4>Page Views</h4>
+                        <div class="number" id="pageViews">0</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Messages Sent</h4>
+                        <div class="number" id="messagesSent">0</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Follows</h4>
+                        <div class="number" id="followsCount">0</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Likes</h4>
+                        <div class="number" id="likesCount">0</div>
+                    </div>
+                    <div class="analytics-card">
+                        <h4>Requests Sent</h4>
+                        <div class="number" id="requestsSent">0</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="gifts" class="tab-content">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">🎁 Valentine's Gift Ideas</h3>
+                <div class="grid-2" id="giftsList"></div>
+            </div>
+        </div>
+
+        <!-- Custom Cards Tab -->
+        <div id="cards" class="tab-content">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">🎨 Create Love Card</h3>
+                <div style="display: grid; gap: 20px;">
+                    <div>
+                        <label style="display: block; color: #333; font-weight: 600; margin-bottom: 10px;">👤 Send To:</label>
+                        <input type="text" id="cardRecipient" placeholder="Enter username..." style="width: 100%; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px;">
+                    </div>
+                    <div>
+                        <label style="display: block; color: #333; font-weight: 600; margin-bottom: 10px;">🎨 Choose Template:</label>
+                        <div class="grid-2" id="cardTemplates"></div>
+                    </div>
+                    <div>
+                        <label style="display: block; color: #333; font-weight: 600; margin-bottom: 10px;">💕 Your Message:</label>
+                        <textarea id="cardMessage" placeholder="Write your message..." style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit;"></textarea>
+                    </div>
+                    <button class="btn-primary" onclick="createCard()" style="width: 100%;">Create & Send Card</button>
+                </div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">📩 Your Received Cards</h3>
+                <div id="receivedCards"></div>
+            </div>
+        </div>
+
+        <!-- Messages Tab -->
+        <div id="messages" class="tab-content">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">💬 Chat</h3>
+                <div>
+                    <label style="display: block; color: #333; font-weight: 600; margin-bottom: 10px;">Chat with:</label>
+                    <input type="text" id="chatUser" placeholder="Enter username..." style="width: 100%; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 15px;" onchange="loadChat(); startChatAutoRefresh();">
+                </div>
+                <div class="message-chat" id="chatBox" style="display: none;">
+                    <div class="messages-list" id="messagesList"></div>
+                    <div class="message-input">
+                        <input type="text" id="chatMessage" placeholder="Type your message..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+                        <button onclick="sendChatMessage()">Send</button>
+                    </div>
+                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                        <input type="file" id="imageShareInput" accept="image/*" style="flex: 1; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px;">
+                        <button onclick="shareImage()" class="btn-primary">📸 Share Image</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings" class="tab-content">
+            <div class="card">
+                <h3 style="color: #ff1744; margin-bottom: 20px;">⚙️ Settings</h3>
+
+                <!-- Email Notifications Section -->
+                <div class="settings-section">
+                    <h4>📧 Email Notification Preferences</h4>
+                    <div class="settings-item">
+                        <label for="emailLikes">
+                            <input type="checkbox" id="emailLikes" checked onchange="updateNotificationSettings()">
+                            <span>Notify me when someone likes me</span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <label for="emailFollows">
+                            <input type="checkbox" id="emailFollows" checked onchange="updateNotificationSettings()">
+                            <span>Notify me when someone follows me</span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <label for="emailRequests">
+                            <input type="checkbox" id="emailRequests" checked onchange="updateNotificationSettings()">
+                            <span>Notify me when I receive requests</span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <label for="emailMessages">
+                            <input type="checkbox" id="emailMessages" checked onchange="updateNotificationSettings()">
+                            <span>Notify me about new messages</span>
+                        </label>
+                    </div>
+                    <div class="settings-item">
+                        <label for="emailCards">
+                            <input type="checkbox" id="emailCards" checked onchange="updateNotificationSettings()">
+                            <span>Notify me when I receive cards</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Blocked Users Section -->
+                <div class="settings-section">
+                    <h4>🚫 Blocked Users</h4>
+                    <div id="blockedUsersList">
+                        <div class="empty-blocked-list">💚 You haven't blocked anyone</div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <button class="btn-danger" onclick="resetSettings()" style="width: 100%;">Reset Settings to Default</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div id="reportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🚨 Report User</h2>
+                <button class="modal-close" onclick="closeReportModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <div id="reportUserInfo" style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <strong>User:</strong> <span id="reportUsername"></span>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #333; font-weight: 600; margin-bottom: 8px;">Reason for Report:</label>
+                    <select id="reportReason" style="width: 100%; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit;">
+                        <option value="">-- Select a reason --</option>
+                        <option value="harassment">Harassment or bullying</option>
+                        <option value="inappropriate">Inappropriate content</option>
+                        <option value="fake_profile">Fake profile</option>
+                        <option value="spam">Spam</option>
+                        <option value="scam">Scam or fraud</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: block; color: #333; font-weight: 600; margin-bottom: 8px;">Details:</label>
+                    <textarea id="reportDetails" placeholder="Please provide details about your report..." style="width: 100%; min-height: 100px; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit; resize: vertical;"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-danger" onclick="submitReport()">Submit Report</button>
+                <button class="btn-success" onclick="closeReportModal()" style="background: #999;">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+                async function searchDiscoverUsers() {
+                    const query = document.getElementById('discoverSearchInput').value.trim();
+                    const resultsDiv = document.getElementById('discoverResults');
+                    if (query.length < 2) {
+                        resultsDiv.innerHTML = '';
+                        return;
+                    }
+                    try {
+                        const response = await fetch(`/api/search-user?q=${encodeURIComponent(query)}`);
+                        const data = await response.json();
+                        if (data.success && data.results.length > 0) {
+                            resultsDiv.innerHTML = data.results.map(user => `
+                                <div class="result-card">
+                                    ${user.profile_picture ? `<img src="${user.profile_picture}" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px;">` : '<div style="font-size: 2em;">👤</div>'}
+                                    <h4>${user.username}</h4>
+                                    <p>${user.email}</p>
+                                    ${user.bio ? `<p style="font-style: italic; margin-top: 5px;">"${user.bio}"</p>` : ''}
+                                    <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="followUser('${user.username}')">👥 Follow</button>
+                                    <div class="profile-action-buttons">
+                                        <button class="btn-small btn-report" onclick="openReportModal('${user.username}')">🚨 Report</button>
+                                        <button class="btn-small btn-block" onclick="blockUser('${user.username}')">🚫 Block</button>
+                                    </div>
+                                </div>
+                            `).join('');
+                        } else {
+                            resultsDiv.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7); grid-column: 1/-1;">No users found</p>';
+                        }
+                    } catch (error) {
+                        resultsDiv.innerHTML = '<p style="text-align: center; color: #f44336;">Error searching users</p>';
+                    }
+                }
+        let currentUser = null;
+        let selectedRecipient = null;
+        let selectedTemplate = null;
+        let currentChatUser = null;
+        let socket = null;
+        let chatRefreshInterval = null;
+        
+        // Initialize socket only if io is available
+        if (typeof io !== 'undefined') {
+            socket = io();
+        }
+
+        async function loadProfile() {
+            try {
+                const response = await fetch('/api/user');
+                const data = await response.json();
+                currentUser = data;
+                displayProfile();
+                
+                // Check if user is admin (with delay to ensure currentUser is set)
+                setTimeout(async () => {
+                    try {
+                        const adminRes = await fetch('/api/admin/stats');
+                        if (adminRes.ok) {
+                            document.getElementById('adminLink').style.display = 'block';
+                        }
+                    } catch (e) {}
+                }, 100);
+                
+                // Load follow/like data
+                loadNetworkStats();
+            } catch (error) {
+                console.error('Error loading profile:', error);
+            }
+        }
+
+        function displayProfile() {
+            const container = document.getElementById('profileContainer');
+            const profileImg = currentUser.profile_picture || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="%23f0f0f0" width="200" height="200"/><text x="100" y="100" text-anchor="middle" dy=".3em" font-size="60" fill="%23999">👤</text></svg>';
+            
+            container.innerHTML = `
+                <div class="profile-picture-upload">
+                    <img src="${profileImg}" class="profile-picture-img" id="profileImg">
+                    <label class="picture-upload-label" title="Upload Profile Picture">📷</label>
+                    <input type="file" id="pictureInput" accept="image/*" onchange="uploadProfilePicture()">
+                </div>
+                <div class="profile-info">
+                    <h2>${currentUser.username}</h2>
+                    <p>📧 ${currentUser.email}</p>
+                    <p style="opacity: 0.7;">Joined ${new Date(currentUser.created_at).toLocaleDateString()}</p>
+                    
+                    <div class="bio-section" style="margin-top: 15px;">
+                        <label style="display: block; color: #333; font-weight: 600; margin-bottom: 5px;">Bio</label>
+                        <textarea id="bioInput" placeholder="Add a bio..." maxlength="200" style="width: 100%; padding: 8px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit;">${currentUser.bio || ''}</textarea>
+                    </div>
+
+                    <div class="bio-section" style="margin-top: 10px;">
+                        <label style="display: block; color: #333; font-weight: 600; margin-bottom: 5px;">Interests</label>
+                        <input type="text" id="interestsInput" placeholder="e.g., Travel, Music, Art..." maxlength="200" value="${currentUser.interests || ''}" style="width: 100%; padding: 8px; border: 2px solid #f0f0f0; border-radius: 8px;">
+                    </div>
+
+                    <div class="bio-section" style="margin-top: 10px;">
+                        <label style="display: block; color: #333; font-weight: 600; margin-bottom: 5px;">Relationship Status</label>
+                        <select id="relationshipStatusInput" style="width: 100%; padding: 8px; border: 2px solid #f0f0f0; border-radius: 8px;">
+                            <option value="Looking" ${currentUser.relationship_status === 'Looking' ? 'selected' : ''}>Looking</option>
+                            <option value="In a Relationship" ${currentUser.relationship_status === 'In a Relationship' ? 'selected' : ''}>In a Relationship</option>
+                            <option value="Married" ${currentUser.relationship_status === 'Married' ? 'selected' : ''}>Married</option>
+                            <option value="Single" ${currentUser.relationship_status === 'Single' ? 'selected' : ''}>Single</option>
+                        </select>
+                    </div>
+
+                    <div class="bio-section" style="margin-top: 10px;">
+                        <label style="display: block; color: #333; font-weight: 600; margin-bottom: 5px;">Theme</label>
+                        <div class="theme-selector">
+                            <div class="theme-option ${currentUser.theme === 'default' ? 'selected' : ''}" onclick="selectTheme('default')" style="background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);">Default</div>
+                            <div class="theme-option ${currentUser.theme === 'dark' ? 'selected' : ''}" onclick="selectTheme('dark')" style="background: linear-gradient(135deg, #333 0%, #000 100%); color: white;">Dark</div>
+                            <div class="theme-option ${currentUser.theme === 'light' ? 'selected' : ''}" onclick="selectTheme('light')" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">Light</div>
+                        </div>
+                    </div>
+
+                    <div class="social-share">
+                        <button class="social-btn facebook" onclick="shareOnFacebook()">f Share</button>
+                        <button class="social-btn instagram" onclick="shareOnInstagram()">📷 Share</button>
+                    </div>
+
+                    <button onclick="saveProfile()" class="btn-primary" style="width: 100%; margin-top: 15px;">Save Profile</button>
+                </div>
+            `;
+            
+            document.querySelector('.picture-upload-label').addEventListener('click', () => {
+                document.getElementById('pictureInput').click();
+            });
+        }
+
+        async function loadNetworkStats() {
+            if (!currentUser || !currentUser.username) return;
+            
+            try {
+                const followersRes = await fetch(`/api/followers/${currentUser.username}`);
+                const followersData = await followersRes.json();
+                document.getElementById('followerCount').textContent = followersData.count;
+
+                const followingRes = await fetch(`/api/following/${currentUser.username}`);
+                const followingData = await followingRes.json();
+                document.getElementById('followingCount').textContent = followingData.count;
+
+                const likesRes = await fetch(`/api/likes/${currentUser.username}`);
+                const likesData = await likesRes.json();
+                document.getElementById('likesCount').textContent = likesData.count;
+
+                loadFollowingList();
+            } catch (error) {
+                console.error('Error loading network stats:', error);
+            }
+        }
+
+        async function loadFollowingList() {
+            if (!currentUser || !currentUser.username) return;
+            
+            try {
+                const response = await fetch(`/api/following/${currentUser.username}`);
+                const data = await response.json();
+                
+                const container = document.getElementById('followingList');
+                if (data.following.length === 0) {
+                    container.innerHTML = '<p style="color: #999;">Not following anyone yet</p>';
+                } else {
+                    container.innerHTML = data.following.map(user => `
+                        <div style="background: #f5f5f5; padding: 10px; border-radius: 5px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <strong>${user}</strong>
+                            <button class="btn-danger" onclick="unfollowUser('${user}')" style="padding: 5px 10px; font-size: 0.8em;">Unfollow</button>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading following list:', error);
+            }
+        }
+
+        async function searchUsersToFollow() {
+            const query = document.getElementById('followSearchInput').value.trim();
+            const resultsDiv = document.getElementById('followSearchResults');
+
+            if (query.length < 2) {
+                resultsDiv.innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/search-user?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success && data.results.length > 0) {
+                    const followingRes = await fetch(`/api/following/${currentUser.username}`);
+                    const followingData = await followingRes.json();
+                    const following = followingData.following;
+
+                    resultsDiv.innerHTML = data.results.map(user => {
+                        const isFollowing = following.includes(user.username);
+                        return `
+                            <div class="result-card">
+                                ${user.profile_picture ? `<img src="${user.profile_picture}" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px;">` : '<div style="font-size: 2em;">👤</div>'}
+                                <h4>${user.username}</h4>
+                                <p>${user.email}</p>
+                                ${user.bio ? `<p style="font-style: italic; margin-top: 5px;">"${user.bio}"</p>` : ''}
+                                <button class="btn-primary" style="width: 100%; margin-top: 10px;" onclick="followUser('${user.username}')">
+                                    ${isFollowing ? '✓ Following' : '👥 Follow'}
+                                </button>
+                                <div class="profile-action-buttons">
+                                    <button class="btn-small btn-report" onclick="openReportModal('${user.username}')">🚨 Report</button>
+                                    <button class="btn-small btn-block" onclick="blockUser('${user.username}')">🚫 Block</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    resultsDiv.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7); grid-column: 1/-1;">No users found</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<p style="text-align: center; color: #f44336;">Error searching users</p>';
+            }
+        }
+
+        async function followUser(username) {
+            try {
+                const response = await fetch(`/api/follow/${username}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    loadNetworkStats();
+                    searchUsersToFollow();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error following user', 'error');
+            }
+        }
+
+        async function unfollowUser(username) {
+            try {
+                const response = await fetch(`/api/unfollow/${username}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(data.message, 'success');
+                    loadNetworkStats();
+                    searchUsersToFollow();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error unfollowing user', 'error');
+            }
+        }
+
+        async function searchUsersToLike() {
+            const query = document.getElementById('likeSearchInput').value.trim();
+            const resultsDiv = document.getElementById('likeSearchResults');
+
+            if (query.length < 2) {
+                resultsDiv.innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/search-user?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success && data.results.length > 0) {
+                    const likesRes = await fetch(`/api/likes/${currentUser.username}`);
+                    const likesData = await likesRes.json();
+                    const myLikes = likesData.likes;
+
+                    resultsDiv.innerHTML = data.results.map(user => {
+                        const isLiked = myLikes.includes(user.username);
+                        return `
+                            <div class="result-card">
+                                ${user.profile_picture ? `<img src="${user.profile_picture}" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px;">` : '<div style="font-size: 2em;">👤</div>'}
+                                <h4>${user.username}</h4>
+                                <p>${user.email}</p>
+                                ${user.bio ? `<p style="font-style: italic; margin-top: 5px;">"${user.bio}"</p>` : ''}
+                                <button class="${isLiked ? 'btn-danger' : 'btn-primary'}" style="width: 100%; margin-top: 10px;" onclick="${isLiked ? `unlikeUser('${user.username}')` : `likeUser('${user.username}')`}">
+                                    ${isLiked ? '💔 Unlike' : '💕 Like'}
+                                </button>
+                                <div class="profile-action-buttons">
+                                    <button class="btn-small btn-report" onclick="openReportModal('${user.username}')">🚨 Report</button>
+                                    <button class="btn-small btn-block" onclick="blockUser('${user.username}')">🚫 Block</button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    resultsDiv.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7); grid-column: 1/-1;">No users found</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<p style="text-align: center; color: #f44336;">Error searching users</p>';
+            }
+        }
+
+        async function likeUser(username) {
+            try {
+                const response = await fetch(`/api/like/${username}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('💕 You liked this user!', 'success');
+                    createHeartAnimation();
+                    loadNetworkStats();
+                    searchUsersToLike();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error liking user', 'error');
+            }
+        }
+
+        async function unlikeUser(username) {
+            try {
+                const response = await fetch(`/api/unlike/${username}`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('You unliked this user', 'success');
+                    loadNetworkStats();
+                    searchUsersToLike();
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error unliking user', 'error');
+            }
+        }
+
+        async function loadLikesList() {
+            try {
+                const response = await fetch('/api/notifications');
+                const notifications = await response.json();
+                const likeNotifs = notifications.filter(n => n.type === 'like');
+
+                const container = document.getElementById('likesList');
+                if (likeNotifs.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">No one has liked you yet 💔</p>';
+                } else {
+                    container.innerHTML = likeNotifs.map(notif => `
+                        <div style="background: rgba(255, 23, 68, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #ff1744;">
+                            <div style="font-weight: 600; color: #ff1744;">${notif.from} ${notif.message}</div>
+                            <div style="color: #999; font-size: 0.85em; margin-top: 5px;">${new Date(notif.created_at).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading likes:', error);
+            }
+        }
+
+        async function loadNotifications() {
+            try {
+                const response = await fetch('/api/notifications');
+                const notifications = await response.json();
+
+                const container = document.getElementById('notificationsList');
+                if (notifications.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: #999;">No notifications yet</p>';
+                } else {
+                    const icons = { follow: '👥', like: '💕', request: '💌', message: '💬' };
+                    container.innerHTML = notifications.map(notif => `
+                        <div style="background: ${notif.read ? '#f5f5f5' : '#ffe0e0'}; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #ff1744;">
+                            <div style="font-weight: 600; color: #333;">${icons[notif.type] || '🔔'} ${notif.message}</div>
+                            <div style="color: #999; font-size: 0.85em; margin-top: 5px;">${new Date(notif.created_at).toLocaleString()}</div>
+                        </div>
+                    `).join('');
+                    
+                    // Mark all as read and clear badge
+                    markAllNotificationsAsRead(notifications);
+                    document.getElementById('notificationBadge').style.display = 'none';
+                    document.getElementById('notificationBadge').textContent = '';
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+            }
+        }
+
+        async function markAllNotificationsAsRead(notifications) {
+            for (const notif of notifications) {
+                if (!notif.read) {
+                    try {
+                        await fetch(`/api/notifications/${notif.id}/read`, { method: 'POST' });
+                    } catch (error) {
+                        console.error('Error marking notification as read:', error);
+                    }
+                }
+            }
+        }
+
+        // Request push notification permission
+        function enablePushNotifications() {
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('Push notifications enabled');
+                    }
+                });
+            }
+        }
+
+        function sendPushNotification(title, options = {}) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, {
+                    icon: '💕',
+                    ...options
+                });
+            }
+        }
+
+        // WebSocket connection
+        if (socket) {
+            socket.on('connect', () => {
+                console.log('Connected to server');
+                enablePushNotifications();
+            });
+
+            socket.on('user_notification', (data) => {
+                showMessage(data.message, 'success');
+                sendPushNotification('💕 Valentine\'s Love', { body: data.message });
+                loadNotifications();
+                createHeartAnimation();
+            });
+
+            socket.on('new_message', (data) => {
+                // Just show notification, don't auto-switch tabs
+                if (data.from) {
+                    showMessage(`💬 New message from ${data.from}`, 'success');
+                    sendPushNotification(`💬 Message from ${data.from}`, { body: 'You have a new message' });
+                }
+            });
+        }
+
+        async function uploadProfilePicture() {
+            const file = document.getElementById('pictureInput').files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/user/profile-picture', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showMessage('✨ Profile picture updated!', 'success');
+                    loadProfile();
+                } else {
+                    showMessage('Error uploading picture', 'error');
+                }
+            } catch (error) {
+                showMessage('Error uploading picture', 'error');
+            }
+        }
+
+        async function saveBio() {
+            const bio = document.getElementById('bioInput').value;
+            
+            try {
+                const response = await fetch('/api/user/bio', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bio })
+                });
+
+                if (response.ok) {
+                    showMessage('✨ Bio updated!', 'success');
+                    currentUser.bio = bio;
+                } else {
+                    showMessage('Error updating bio', 'error');
+                }
+            } catch (error) {
+                showMessage('Error updating bio', 'error');
+            }
+        }
+
+        function selectTheme(theme) {
+            document.querySelectorAll('.theme-option').forEach(t => t.classList.remove('selected'));
+            event.target.classList.add('selected');
+            currentUser.theme = theme;
+        }
+
+        async function saveProfile() {
+            const interests = document.getElementById('interestsInput').value;
+            const relationship_status = document.getElementById('relationshipStatusInput').value;
+            const theme = currentUser.theme || 'default';
+            
+            try {
+                const response = await fetch('/api/user/profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ interests, relationship_status, theme })
+                });
+
+                if (response.ok) {
+                    showMessage('✨ Profile updated!', 'success');
+                    currentUser.interests = interests;
+                    currentUser.relationship_status = relationship_status;
+                    currentUser.theme = theme;
+                } else {
+                    showMessage('Error updating profile', 'error');
+                }
+            } catch (error) {
+                showMessage('Error updating profile', 'error');
+            }
+        }
+
+        function shareOnFacebook() {
+            const shareUrl = `${window.location.origin}/dashboard`;
+            const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=Join%20me%20on%20Valentine's%20Love!%20%F0%9F%92%95`;
+            window.open(fbUrl, '_blank', 'width=600,height=400');
+        }
+
+        function shareOnInstagram() {
+            showMessage('💕 Share this link with friends on Instagram: ' + window.location.origin + '/dashboard', 'success');
+        }
+
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('/api/user/analytics');
+                const analytics = await response.json();
+                return analytics;
+            } catch (error) {
+                console.error('Error loading analytics:', error);
+                return {};
+            }
+        }
+
+        async function displayAnalytics() {
+            const analytics = await loadAnalytics();
+            document.getElementById('pageViews').textContent = analytics.page_views || 0;
+            document.getElementById('messagesSent').textContent = analytics.messages_sent || 0;
+            document.getElementById('followsCount').textContent = analytics.follows || 0;
+            document.getElementById('likesCount').textContent = analytics.likes || 0;
+            document.getElementById('requestsSent').textContent = analytics.requests_sent || 0;
+        }
+
+        async function searchUsers() {
+            const query = document.getElementById('searchInput').value.trim();
+            const resultsDiv = document.getElementById('searchResults');
+
+            if (query.length < 2) {
+                resultsDiv.innerHTML = '';
+                document.getElementById('messageForm').style.display = 'none';
+                selectedRecipient = null;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/search-user?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.success && data.results.length > 0) {
+                    resultsDiv.innerHTML = data.results.map(user => `
+                        <div class="result-card ${selectedRecipient?.username === user.username ? 'selected' : ''}" 
+                             onclick="selectRecipient('${user.username}', '${user.email}')">
+                            ${user.profile_picture ? `<img src="${user.profile_picture}" style="width: 60px; height: 60px; border-radius: 50%; margin-bottom: 10px;">` : '<div style="font-size: 2em;">👤</div>'}
+                            <h4>${user.username}</h4>
+                            <p>${user.email}</p>
+                            ${user.bio ? `<p style="font-style: italic; margin-top: 5px;">"${user.bio}"</p>` : ''}
+                        </div>
+                    `).join('');
+                } else {
+                    resultsDiv.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.7); grid-column: 1/-1;">No users found</p>';
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = '<p style="text-align: center; color: #f44336;">Error searching users</p>';
+            }
+        }
+
+        function selectRecipient(username, email) {
+            selectedRecipient = { username, email };
+            document.getElementById('messageForm').style.display = 'block';
+            document.querySelectorAll('.result-card').forEach(card => card.classList.remove('selected'));
+            event.target.closest('.result-card')?.classList.add('selected');
+        }
+
+        async function sendRequest() {
+            if (!selectedRecipient) {
+                showMessage('Please select a recipient', 'error');
+                return;
+            }
+
+            const message = document.getElementById('messageText').value.trim();
+
+            if (!message) {
+                showMessage('Please write a message', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/send-request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        recipient_username: selectedRecipient.username,
+                        message: message
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('✨ Request sent successfully!', 'success');
+                    createHeartAnimation();
+                    document.getElementById('searchInput').value = '';
+                    document.getElementById('messageText').value = '';
+                    document.getElementById('searchResults').innerHTML = '';
+                    document.getElementById('messageForm').style.display = 'none';
+                    selectedRecipient = null;
+                    setTimeout(() => loadSentRequests(), 1000);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error sending request', 'error');
+            }
+        }
+
+        async function loadReceivedRequests() {
+            try {
+                const response = await fetch('/api/requests/received');
+                const requests = await response.json();
+
+                const container = document.getElementById('receivedRequests');
+
+                if (requests.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>💭 No Requests Yet</h3>
+                            <p>Waiting for someone special...</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = requests.map(req => `
+                    <div class="request-card ${req.status}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3>💌 From <strong>${req.from}</strong></h3>
+                            <span class="status-badge ${req.status}">${req.status}</span>
+                        </div>
+                        <p style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin: 10px 0;">"${req.message}"</p>
+                        ${req.response_message ? `<p style="background: rgba(76,175,80,0.1); padding: 15px; border-radius: 8px; color: #2e5f2e;"><strong>Your Response:</strong> "${req.response_message}"</p>` : ''}
+                        <p style="color: #999; font-size: 0.85em; margin-top: 10px;">Sent: ${new Date(req.sent_at).toLocaleString()}</p>
+                        ${req.status === 'pending' ? `
+                            <div style="margin-top: 15px;">
+                                <textarea id="response-${req.id}" placeholder="Write your response (optional)..." style="width: 100%; min-height: 60px; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit; margin-bottom: 10px;"></textarea>
+                                <div class="button-group">
+                                    <button class="btn-success" onclick="respondToRequest(${req.id}, 'accept')">💚 Accept</button>
+                                    <button class="btn-danger" onclick="respondToRequest(${req.id}, 'reject')">💔 Decline</button>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            }
+        }
+
+        async function loadSentRequests() {
+            try {
+                const response = await fetch('/api/requests/sent');
+                const requests = await response.json();
+
+                const container = document.getElementById('sentRequests');
+
+                if (requests.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <h3>😊 No Requests Sent</h3>
+                            <p>Go ahead and ask someone!</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = requests.map(req => `
+                    <div class="request-card ${req.status}">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                            <h3>💌 To <strong>${req.to}</strong></h3>
+                            <span class="status-badge ${req.status}">${req.status}</span>
+                        </div>
+                        <p style="background: rgba(0,0,0,0.05); padding: 15px; border-radius: 8px; margin: 10px 0;">"${req.message}"</p>
+                        ${req.response_message ? `<p style="background: rgba(76,175,80,0.1); padding: 15px; border-radius: 8px; color: #2e5f2e;"><strong>Their Response:</strong> "${req.response_message}"</p>` : ''}
+                        <p style="color: #999; font-size: 0.85em; margin-top: 10px;">Sent: ${new Date(req.sent_at).toLocaleString()}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading requests:', error);
+            }
+        }
+
+        async function respondToRequest(requestId, response) {
+            const responseMessage = document.getElementById(`response-${requestId}`)?.value.trim() || '';
+
+            try {
+                const res = await fetch(`/api/requests/${requestId}/respond`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        response: response,
+                        response_message: responseMessage
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showMessage(data.message, 'success');
+                    createHeartAnimation();
+                    setTimeout(() => loadReceivedRequests(), 1000);
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Error responding to request', 'error');
+            }
+        }
+
+        async function loadGifts() {
+            try {
+                const response = await fetch('/api/gifts');
+                const gifts = await response.json();
+
+                document.getElementById('giftsList').innerHTML = gifts.map(gift => `
+                    <div class="gift-card">
+                        <div class="gift-emoji">${gift.emoji}</div>
+                        <h3>${gift.name}</h3>
+                        <p>${gift.description}</p>
+                        <p style="color: #ff1744; font-weight: 600; margin-top: 10px;">${gift.price}</p>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading gifts:', error);
+            }
+        }
+
+        async function loadCardTemplates() {
+            try {
+                const response = await fetch('/api/card-templates');
+                const templates = await response.json();
+
+                document.getElementById('cardTemplates').innerHTML = templates.map(template => `
+                    <div class="card-template ${selectedTemplate?.id === template.id ? 'selected' : ''}" 
+                         onclick="selectTemplate(${template.id}, '${template.name}')" 
+                         style="background: ${template.bg}; color: white;">
+                        <div style="font-size: 2em; margin-bottom: 10px;">${template.icon}</div>
+                        <div style="font-weight: 600;">${template.name}</div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        function selectTemplate(id, name) {
+            selectedTemplate = { id, name };
+            document.querySelectorAll('.card-template').forEach(t => t.classList.remove('selected'));
+            event.target.closest('.card-template')?.classList.add('selected');
+        }
+
+        async function createCard() {
+            const recipient = document.getElementById('cardRecipient').value.trim();
+            const message = document.getElementById('cardMessage').value.trim();
+
+            if (!recipient || !selectedTemplate || !message) {
+                showMessage('Please fill all fields and select a template', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/cards/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        to: recipient,
+                        template_id: selectedTemplate.id,
+                        message: message
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('✨ Card created and sent!', 'success');
+                    createHeartAnimation();
+                    document.getElementById('cardRecipient').value = '';
+                    document.getElementById('cardMessage').value = '';
+                    selectedTemplate = null;
+                    loadCardTemplates();
+                    loadReceivedCards();
+                } else {
+                    showMessage(data.message || 'Error creating card', 'error');
+                }
+            } catch (error) {
+                showMessage('Error creating card', 'error');
+            }
+        }
+
+        async function loadReceivedCards() {
+            try {
+                const response = await fetch('/api/cards/received');
+                const cards = await response.json();
+
+                document.getElementById('receivedCards').innerHTML = cards.length ? 
+                    cards.map(card => `
+                        <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; cursor: pointer;" 
+                             onclick="viewCard(${card.id})">
+                            <div style="font-size: 1.5em; margin-bottom: 10px;">💌 From ${card.from}</div>
+                            <div>${card.viewed ? '✅ Viewed' : '🆕 New Card'}</div>
+                        </div>
+                    `).join('') :
+                    '<p style="text-align: center; color: #999;">No cards received yet</p>';
+            } catch (error) {
+                console.error('Error loading cards:', error);
+            }
+        }
+
+        async function viewCard(cardId) {
+            try {
+                const response = await fetch(`/api/cards/${cardId}/view`, { method: 'POST' });
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert(`💌 From ${data.card.from}:\n\n${data.card.message}`);
+                    loadReceivedCards();
+                }
+            } catch (error) {
+                console.error('Error viewing card:', error);
+            }
+        }
+
+        async function loadChat() {
+            const username = document.getElementById('chatUser').value.trim();
+            if (!username) {
+                document.getElementById('chatBox').style.display = 'none';
+                return;
+            }
+
+            currentChatUser = username;
+            document.getElementById('chatBox').style.display = 'flex';
+
+            try {
+                const response = await fetch(`/api/messages/${username}`);
+                
+                if (!response.ok) {
+                    console.error('Error loading messages:', response.status);
+                    return;
+                }
+                
+                const messages = await response.json();
+                console.log('Loaded messages:', messages); // Debug
+
+                const messagesList = document.getElementById('messagesList');
+                
+                if (!Array.isArray(messages) || messages.length === 0) {
+                    messagesList.innerHTML = '<div style="text-align: center; color: #999; padding: 20px;">No messages yet. Start the conversation!</div>';
+                    return;
+                }
+                
+                messagesList.innerHTML = messages.map(msg => {
+                    if (msg.type === 'image') {
+                        return `
+                            <div class="message-item ${msg.from === currentUser.username ? 'sent' : 'received'}" style="max-width: 80%;">
+                                <img src="${msg.content}" style="max-width: 100%; border-radius: 8px; max-height: 300px;">
+                            </div>
+                        `;
+                    }
+                    return `
+                        <div class="message-item ${msg.from === currentUser.username ? 'sent' : 'received'}">
+                            ${msg.content}
+                        </div>
+                    `;
+                }).join('');
+
+                messagesList.scrollTop = messagesList.scrollHeight;
+            } catch (error) {
+                console.error('Error loading messages:', error);
+                document.getElementById('messagesList').innerHTML = '<div style="color: red; padding: 20px;">Error loading messages</div>';
+            }
+        }
+
+        function startChatAutoRefresh() {
+            // Auto-refresh chat every 2 seconds when in messages tab
+            if (currentChatUser) {
+                clearInterval(chatRefreshInterval);
+                chatRefreshInterval = setInterval(() => {
+                    if (currentChatUser && document.getElementById('messages').classList.contains('active')) {
+                        loadChat();
+                    }
+                }, 2000);
+            }
+        }
+
+        function stopChatAutoRefresh() {
+            if (chatRefreshInterval) {
+                clearInterval(chatRefreshInterval);
+            }
+        }
+
+        async function sendChatMessage() {
+            const content = document.getElementById('chatMessage').value.trim();
+
+            if (!content || !currentChatUser) {
+                showMessage('Please write a message and select a user', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/messages/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ to: currentChatUser, content })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('✓ Message sent', 'success');
+                    document.getElementById('chatMessage').value = '';
+                    await loadChat();
+                } else {
+                    showMessage(data.message || 'Error sending message', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                showMessage('Error sending message', 'error');
+            }
+        }
+
+        async function shareImage() {
+            const file = document.getElementById('imageShareInput').files[0];
+            if (!file || !currentChatUser) {
+                showMessage('Please select an image and a chat user', 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('to', currentChatUser);
+
+            try {
+                const response = await fetch('/api/messages/share-image', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    showMessage('📸 Image shared!', 'success');
+                    document.getElementById('imageShareInput').value = '';
+                    loadChat();
+                } else {
+                    showMessage('Error sharing image', 'error');
+                }
+            } catch (error) {
+                showMessage('Error sharing image', 'error');
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'received') loadReceivedRequests();
+            else if (tabName === 'sent') loadSentRequests();
+            else if (tabName === 'follow') {
+                loadNetworkStats();
+                stopChatAutoRefresh();
+            }
+            else if (tabName === 'likes') {
+                loadLikesList();
+                searchUsersToLike();
+                stopChatAutoRefresh();
+            }
+            else if (tabName === 'notifications') {
+                loadNotifications();
+                stopChatAutoRefresh();
+            }
+            else if (tabName === 'analytics') {
+                displayAnalytics();
+                stopChatAutoRefresh();
+            }
+            else if (tabName === 'gifts') {
+                loadGifts();
+                stopChatAutoRefresh();
+            }
+            else if (tabName === 'cards') {
+                loadCardTemplates();
+                loadReceivedCards();
+                stopChatAutoRefresh();
+            }
+            else if (tabName === 'messages') {
+                startChatAutoRefresh();
+            }
+            else if (tabName === 'settings') {
+                loadBlockedUsers();
+                loadNotificationSettings();
+                stopChatAutoRefresh();
+            }
+            else {
+                stopChatAutoRefresh();
+            }
+        }
+
+        // Report Modal Functions
+        function openReportModal(username) {
+            document.getElementById('reportUsername').textContent = username;
+            document.getElementById('reportReason').value = '';
+            document.getElementById('reportDetails').value = '';
+            document.getElementById('reportModal').classList.add('active');
+        }
+
+        function closeReportModal() {
+            document.getElementById('reportModal').classList.remove('active');
+        }
+
+        async function submitReport() {
+            const username = document.getElementById('reportUsername').textContent;
+            const reason = document.getElementById('reportReason').value.trim();
+            const details = document.getElementById('reportDetails').value.trim();
+
+            if (!reason) {
+                showMessage('Please select a reason for the report', 'error');
+                return;
+            }
+
+            if (!details) {
+                showMessage('Please provide details about your report', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/report-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        reported_username: username,
+                        reason: reason,
+                        details: details
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('✨ Report submitted successfully. Thank you!', 'success');
+                    closeReportModal();
+                } else {
+                    showMessage(data.message || 'Error submitting report', 'error');
+                }
+            } catch (error) {
+                showMessage('Error submitting report', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Block User Function
+        async function blockUser(username) {
+            if (!confirm(`Are you sure you want to block ${username}? You won't see their profile or receive messages from them.`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/block-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blocked_username: username })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(`✨ ${username} has been blocked`, 'success');
+                    loadBlockedUsers();
+                    // Refresh search results
+                    document.getElementById('followSearchInput').value = '';
+                    document.getElementById('likeSearchInput').value = '';
+                    document.getElementById('discoverSearchInput').value = '';
+                    document.getElementById('followSearchResults').innerHTML = '';
+                    document.getElementById('likeSearchResults').innerHTML = '';
+                    document.getElementById('discoverResults').innerHTML = '';
+                } else {
+                    showMessage(data.message || 'Error blocking user', 'error');
+                }
+            } catch (error) {
+                showMessage('Error blocking user', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Settings Functions
+        async function loadNotificationSettings() {
+            try {
+                const response = await fetch('/api/user/notification-settings');
+                const settings = await response.json();
+
+                document.getElementById('emailLikes').checked = settings.email_likes !== false;
+                document.getElementById('emailFollows').checked = settings.email_follows !== false;
+                document.getElementById('emailRequests').checked = settings.email_requests !== false;
+                document.getElementById('emailMessages').checked = settings.email_messages !== false;
+                document.getElementById('emailCards').checked = settings.email_cards !== false;
+            } catch (error) {
+                console.error('Error loading notification settings:', error);
+            }
+        }
+
+        async function updateNotificationSettings() {
+            const settings = {
+                email_likes: document.getElementById('emailLikes').checked,
+                email_follows: document.getElementById('emailFollows').checked,
+                email_requests: document.getElementById('emailRequests').checked,
+                email_messages: document.getElementById('emailMessages').checked,
+                email_cards: document.getElementById('emailCards').checked
+            };
+
+            try {
+                const response = await fetch('/api/user/notification-settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(settings)
+                });
+
+                if (response.ok) {
+                    showMessage('✨ Notification settings updated', 'success');
+                } else {
+                    showMessage('Error updating settings', 'error');
+                }
+            } catch (error) {
+                showMessage('Error updating settings', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        async function loadBlockedUsers() {
+            try {
+                const response = await fetch('/api/blocked-users');
+                const blockedUsers = await response.json();
+
+                const container = document.getElementById('blockedUsersList');
+                if (blockedUsers.length === 0) {
+                    container.innerHTML = '<div class="empty-blocked-list">💚 You haven\'t blocked anyone</div>';
+                } else {
+                    container.innerHTML = blockedUsers.map(user => `
+                        <div class="blocked-user-item">
+                            <strong>${user}</strong>
+                            <button class="btn-unblock" onclick="unblockUser('${user}')">Unblock</button>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading blocked users:', error);
+            }
+        }
+
+        async function unblockUser(username) {
+            if (!confirm(`Are you sure you want to unblock ${username}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/unblock-user', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ unblock_username: username })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage(`✨ ${username} has been unblocked`, 'success');
+                    loadBlockedUsers();
+                } else {
+                    showMessage(data.message || 'Error unblocking user', 'error');
+                }
+            } catch (error) {
+                showMessage('Error unblocking user', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        async function resetSettings() {
+            if (!confirm('Are you sure you want to reset all settings to default?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/user/reset-settings', { method: 'POST' });
+
+                if (response.ok) {
+                    showMessage('✨ Settings reset to default', 'success');
+                    loadNotificationSettings();
+                } else {
+                    showMessage('Error resetting settings', 'error');
+                }
+            } catch (error) {
+                showMessage('Error resetting settings', 'error');
+                console.error('Error:', error);
+            }
+        }
+
+        // Close modal when clicking outside of it
+        window.onclick = function(event) {
+            const modal = document.getElementById('reportModal');
+            if (event.target == modal) {
+                closeReportModal();
+            }
+        }
+
+        function showMessage(message, type) {
+            const el = document.getElementById('message');
+            el.textContent = message;
+            el.className = `message ${type}`;
+            setTimeout(() => el.textContent = '', 4000);
+        }
+
+        function createHeartAnimation() {
+            const hearts = ['💖', '💕', '💗', '❤️'];
+            const heart = document.createElement('div');
+            heart.className = 'heart-animation';
+            heart.innerHTML = hearts[Math.floor(Math.random() * hearts.length)];
+            heart.style.left = Math.random() * window.innerWidth + 'px';
+            heart.style.top = Math.random() * window.innerHeight + 'px';
+            document.body.appendChild(heart);
+            setTimeout(() => heart.remove(), 2000);
+        }
+
+        // Initialize
+        loadProfile();
+        loadReceivedRequests();
+        loadNotifications();
+        loadReceivedMessages();
+    </script>
+</body>
+</html>
