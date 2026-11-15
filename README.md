@@ -11,6 +11,8 @@ Production messaging platform with email confirmation, SQL database, Stripe gift
 - Conversation inbox + paginated chat
 - File uploads for avatars/chat images (validated with Pillow)
 - Stripe gift checkout, webhook fulfill, admin refunds
+- **Admin monetization**: gifts + Premium + Profile Boosts pay into your Stripe account; pricing controls, revenue ledger, Stripe payouts
+- Premium (gift discount + badge) and Profile Boost (Discover ranking)
 - Admin: users, ban/unban, reports resolve, order ledger
 - Block/report, analytics, cards, likes, follows
 - Rate limiting on auth & payments

@@ -799,6 +799,7 @@
             <button class="nav-tab" onclick="switchTab('notifications')">🔔 Notifications</button>
             <button class="nav-tab" onclick="switchTab('analytics')">📊 Analytics</button>
             <button class="nav-tab" onclick="switchTab('gifts')">🎁 Buy Gifts</button>
+            <button class="nav-tab" onclick="switchTab('upgrade')">⭐ Upgrade</button>
             <button class="nav-tab" onclick="switchTab('cards')">🎨 Cards</button>
             <button class="nav-tab" onclick="switchTab('messages')">💬 Messages</button>
             <button class="nav-tab" onclick="switchTab('settings')">⚙️ Settings</button>
@@ -1004,6 +1005,18 @@
             </div>
         </div>
 
+        <!-- Upgrade / monetization Tab -->
+        <div id="upgrade" class="tab-content">
+            <div class="card">
+                <h3 style="color: #0f766e; margin-bottom: 8px;">⭐ Premium &amp; Boosts</h3>
+                <p style="color:#64748b;margin-bottom:16px;">Support the platform and get more visibility. Payments go securely through Stripe.</p>
+                <div id="upgradeBillingBanner" style="display:none;padding:12px;border-radius:10px;margin-bottom:14px;font-weight:600;"></div>
+                <div class="grid-2" id="upgradeCards">
+                    <p style="color:#94a3b8;">Loading plans…</p>
+                </div>
+            </div>
+        </div>
+
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
             <div class="card">
@@ -1184,7 +1197,10 @@
                     <input type="file" id="pictureInput" accept="image/*" onchange="uploadProfilePicture()">
                 </div>
                 <div class="profile-info">
-                    <h2>${currentUser.username}</h2>
+                    <h2>${currentUser.username}
+                        ${currentUser.is_premium ? '<span style="font-size:0.55em;vertical-align:middle;background:#0f766e;color:#fff;padding:3px 8px;border-radius:999px;margin-left:6px;">Premium</span>' : ''}
+                        ${currentUser.is_boosted ? '<span style="font-size:0.55em;vertical-align:middle;background:#c2410c;color:#fff;padding:3px 8px;border-radius:999px;margin-left:6px;">Boosted</span>' : ''}
+                    </h2>
                     <p>📧 ${currentUser.email}</p>
                     <p style="opacity: 0.7;">Joined ${new Date(currentUser.created_at).toLocaleDateString()}</p>
                     
@@ -2281,6 +2297,10 @@
                 loadGifts();
                 stopChatAutoRefresh();
             }
+            else if (tabName === 'upgrade') {
+                loadUpgradePlans();
+                stopChatAutoRefresh();
+            }
             else if (tabName === 'cards') {
                 loadCardTemplates();
                 loadReceivedCards();
@@ -2522,26 +2542,105 @@
         }
 
         // Gift payment return banner (Stripe success/cancel)
+        async function loadUpgradePlans() {
+            try {
+                const res = await fetch('/api/monetization');
+                const data = await res.json();
+                const el = document.getElementById('upgradeCards');
+                if (!data.enabled) {
+                    el.innerHTML = '<p style="color:#64748b;">Upgrades are temporarily unavailable.</p>';
+                    return;
+                }
+                const prem = data.premium || {};
+                const boost = data.boost || {};
+                el.innerHTML = `
+                    <div class="gift-card" style="text-align:left;">
+                        <div class="gift-emoji">👑</div>
+                        <h3>Premium ${prem.active ? '✓ Active' : ''}</h3>
+                        <p style="font-weight:700;color:#0f766e;font-size:1.2em;">${prem.price} / ${prem.days} days</p>
+                        <ul style="color:#64748b;margin:12px 0 16px 18px;">${(prem.benefits||[]).map(b=>`<li>${b}</li>`).join('')}</ul>
+                        ${prem.until ? `<p style="font-size:0.85em;color:#64748b;">Active until ${new Date(prem.until).toLocaleString()}</p>` : ''}
+                        <button class="btn-primary" style="width:100%;" onclick="buyPremium()">${prem.active ? 'Extend Premium' : 'Buy Premium'}</button>
+                    </div>
+                    <div class="gift-card" style="text-align:left;">
+                        <div class="gift-emoji">🚀</div>
+                        <h3>Profile Boost ${boost.active ? '✓ Live' : ''}</h3>
+                        <p style="font-weight:700;color:#0f766e;font-size:1.2em;">${boost.price} / ${boost.days} days</p>
+                        <ul style="color:#64748b;margin:12px 0 16px 18px;">${(boost.benefits||[]).map(b=>`<li>${b}</li>`).join('')}</ul>
+                        ${boost.until ? `<p style="font-size:0.85em;color:#64748b;">Boosted until ${new Date(boost.until).toLocaleString()}</p>` : ''}
+                        <button class="btn-primary" style="width:100%;" onclick="buyBoost()">${boost.active ? 'Extend Boost' : 'Boost my profile'}</button>
+                    </div>
+                `;
+            } catch (e) {
+                document.getElementById('upgradeCards').innerHTML = '<p style="color:#b91c1c;">Could not load plans.</p>';
+            }
+        }
+
+        async function buyPremium() {
+            try {
+                const res = await fetch('/api/billing/premium/checkout', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) { showMessage(data.message || 'Checkout failed', 'error'); return; }
+                if (data.checkout_url) { window.location.href = data.checkout_url; return; }
+                showMessage(data.message || 'Premium activated!', 'success');
+                loadUpgradePlans();
+                loadProfile();
+            } catch (e) { showMessage('Payment error', 'error'); }
+        }
+
+        async function buyBoost() {
+            try {
+                const res = await fetch('/api/billing/boost/checkout', { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok) { showMessage(data.message || 'Checkout failed', 'error'); return; }
+                if (data.checkout_url) { window.location.href = data.checkout_url; return; }
+                showMessage(data.message || 'Boost activated!', 'success');
+                loadUpgradePlans();
+                loadProfile();
+            } catch (e) { showMessage('Payment error', 'error'); }
+        }
+
         (function handleGiftReturn() {
             const params = new URLSearchParams(window.location.search);
             const giftStatus = params.get('gift');
-            if (!giftStatus) return;
-            const banner = document.getElementById('giftPaymentBanner');
-            if (!banner) return;
-            if (giftStatus === 'success') {
-                banner.style.display = 'block';
-                banner.style.background = '#dcfce7';
-                banner.style.color = '#166534';
-                banner.textContent = 'Payment successful — your gift was delivered!';
-                switchTab('gifts');
-            } else if (giftStatus === 'cancelled') {
-                banner.style.display = 'block';
-                banner.style.background = '#fef3c7';
-                banner.style.color = '#92400e';
-                banner.textContent = 'Payment cancelled. No charge was made.';
-                switchTab('gifts');
+            const billingStatus = params.get('billing');
+            if (giftStatus) {
+                const banner = document.getElementById('giftPaymentBanner');
+                if (banner) {
+                    banner.style.display = 'block';
+                    if (giftStatus === 'success') {
+                        banner.style.background = '#dcfce7';
+                        banner.style.color = '#166534';
+                        banner.textContent = 'Payment successful — your gift was delivered!';
+                        switchTab('gifts');
+                    } else if (giftStatus === 'cancelled') {
+                        banner.style.background = '#fef3c7';
+                        banner.style.color = '#92400e';
+                        banner.textContent = 'Payment cancelled. No charge was made.';
+                        switchTab('gifts');
+                    }
+                }
             }
-            window.history.replaceState({}, '', '/dashboard');
+            if (billingStatus) {
+                const banner = document.getElementById('upgradeBillingBanner');
+                if (banner) {
+                    banner.style.display = 'block';
+                    if (billingStatus === 'success') {
+                        banner.style.background = '#dcfce7';
+                        banner.style.color = '#166534';
+                        banner.textContent = 'Payment successful — your upgrade is active!';
+                        switchTab('upgrade');
+                    } else {
+                        banner.style.background = '#fef3c7';
+                        banner.style.color = '#92400e';
+                        banner.textContent = 'Payment cancelled. No charge was made.';
+                        switchTab('upgrade');
+                    }
+                }
+            }
+            if (giftStatus || billingStatus) {
+                window.history.replaceState({}, '', '/dashboard');
+            }
         })();
 
         // Initialize
