@@ -246,6 +246,34 @@
         </div>
 
         <div class="section">
+            <h2>💰 Platform Revenue (how you make money)</h2>
+            <p style="color:#666;margin-bottom:12px;">Gift sales, Premium, and Boosts all pay into your Stripe account. Withdraw from Stripe → Balances → Payouts.</p>
+            <div id="revenueSummary" style="margin-bottom:16px;">Loading…</div>
+            <div class="grid-2" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div>
+                    <h3>Pricing controls</h3>
+                    <label>Premium price (cents)</label>
+                    <input id="premiumPrice" type="number" style="width:100%;padding:8px;margin-bottom:8px;">
+                    <label>Premium days</label>
+                    <input id="premiumDays" type="number" style="width:100%;padding:8px;margin-bottom:8px;">
+                    <label>Premium gift discount %</label>
+                    <input id="premiumDiscount" type="number" style="width:100%;padding:8px;margin-bottom:8px;">
+                    <label>Boost price (cents)</label>
+                    <input id="boostPrice" type="number" style="width:100%;padding:8px;margin-bottom:8px;">
+                    <label>Boost days</label>
+                    <input id="boostDays" type="number" style="width:100%;padding:8px;margin-bottom:8px;">
+                    <label><input id="monetizationEnabled" type="checkbox"> Monetization enabled</label>
+                    <button class="action-btn btn-admin" style="margin-top:10px;" onclick="saveMonetization()">Save pricing</button>
+                </div>
+                <div>
+                    <h3>Recent platform payments</h3>
+                    <div id="revenueList">Loading…</div>
+                </div>
+            </div>
+            <pre id="withdrawHelp" style="background:#f8f8f8;padding:12px;border-radius:8px;white-space:pre-wrap;margin-top:16px;"></pre>
+        </div>
+
+        <div class="section">
             <h2>💳 Gift Orders</h2>
             <div id="ordersList">Loading…</div>
         </div>
@@ -283,8 +311,13 @@
                         <div class="number">${stats.total_gifts_sent || 0}</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Gift Revenue</h3>
+                        <h3>Platform Revenue</h3>
                         <div class="number" style="font-size:1.4em;">${stats.revenue || '$0.00'}</div>
+                        <div style="font-size:0.8em;color:#666;margin-top:6px;">
+                            Gifts ${stats.revenue_by_kind?.gift || '$0'} ·
+                            Premium ${stats.revenue_by_kind?.premium || '$0'} ·
+                            Boost ${stats.revenue_by_kind?.boost || '$0'}
+                        </div>
                     </div>
                     <div class="stat-card">
                         <h3>Total Follows</h3>
@@ -512,15 +545,77 @@
         }
         
         // Load on page load
+        async function loadRevenue() {
+            try {
+                const res = await fetch('/api/admin/revenue');
+                const data = await res.json();
+                document.getElementById('revenueSummary').innerHTML = `
+                    <div style="display:flex;flex-wrap:wrap;gap:12px;">
+                        <div class="stat-card" style="min-width:160px;"><h3>Total earned</h3><div class="number" style="font-size:1.5em;">${data.total_revenue}</div></div>
+                        <div class="stat-card" style="min-width:120px;"><h3>Gifts</h3><div class="number" style="font-size:1.2em;">${data.by_kind.gift}</div></div>
+                        <div class="stat-card" style="min-width:120px;"><h3>Premium</h3><div class="number" style="font-size:1.2em;">${data.by_kind.premium}</div></div>
+                        <div class="stat-card" style="min-width:120px;"><h3>Boosts</h3><div class="number" style="font-size:1.2em;">${data.by_kind.boost}</div></div>
+                    </div>`;
+                const s = data.settings || {};
+                document.getElementById('premiumPrice').value = s.premium_price_cents ?? 999;
+                document.getElementById('premiumDays').value = s.premium_days ?? 30;
+                document.getElementById('premiumDiscount').value = s.premium_gift_discount_percent ?? 10;
+                document.getElementById('boostPrice').value = s.boost_price_cents ?? 499;
+                document.getElementById('boostDays').value = s.boost_days ?? 7;
+                document.getElementById('monetizationEnabled').checked = !!s.monetization_enabled;
+                document.getElementById('withdrawHelp').textContent = data.how_to_withdraw || s.payout_note || '';
+                const recent = data.recent || [];
+                document.getElementById('revenueList').innerHTML = recent.length ? `
+                    <table><thead><tr><th>Type</th><th>User</th><th>Amount</th><th>Status</th><th></th></tr></thead>
+                    <tbody>${recent.slice(0,40).map(p => `
+                        <tr>
+                            <td>${p.kind}</td><td>${p.username}</td>
+                            <td>$${(p.amount_cents/100).toFixed(2)}</td><td>${p.status}</td>
+                            <td>${p.status==='paid' && p.kind!=='gift' ? `<button class="action-btn btn-remove" onclick="refundPlatform('${p.id}')">Refund</button>` : ''}</td>
+                        </tr>`).join('')}
+                    </tbody></table>` : '<p>No payments yet — share the app and sell gifts/Premium/Boosts.</p>';
+            } catch (e) {
+                document.getElementById('revenueSummary').innerHTML = '<p style="color:red;">Failed to load revenue</p>';
+            }
+        }
+
+        async function saveMonetization() {
+            const body = {
+                monetization_enabled: document.getElementById('monetizationEnabled').checked,
+                premium_price_cents: parseInt(document.getElementById('premiumPrice').value, 10),
+                premium_days: parseInt(document.getElementById('premiumDays').value, 10),
+                premium_gift_discount_percent: parseInt(document.getElementById('premiumDiscount').value, 10),
+                boost_price_cents: parseInt(document.getElementById('boostPrice').value, 10),
+                boost_days: parseInt(document.getElementById('boostDays').value, 10),
+            };
+            const res = await fetch('/api/admin/monetization', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+            showMessage(data.success ? 'success' : 'error', data.success ? 'Pricing saved' : data.message);
+            loadRevenue();
+        }
+
+        async function refundPlatform(id) {
+            if (!confirm('Refund this payment?')) return;
+            const res = await fetch(`/api/admin/revenue/${id}/refund`, { method: 'POST' });
+            const data = await res.json();
+            showMessage(data.success ? 'success' : 'error', data.message);
+            loadRevenue(); loadStats();
+        }
+
         window.addEventListener('load', () => {
             loadStats();
             loadUsers();
             loadReports();
             loadOrders();
+            loadRevenue();
             setInterval(loadStats, 30000);
             setInterval(loadUsers, 30000);
             setInterval(loadReports, 30000);
             setInterval(loadOrders, 30000);
+            setInterval(loadRevenue, 30000);
         });
     </script>
 </body>

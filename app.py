@@ -35,6 +35,7 @@ from models import (
     init_db, migrate_json_if_needed, get_db, SessionLocal, utcnow, new_id,
     User, AuthToken, ConnectionRequest, Message, Card, Follow, Like,
     Notification, Block, Report, Order, GiftSent, UserAnalytics,
+    PlatformSettings, PlatformPayment, get_platform_settings,
 )
 
 # ---------------------------------------------------------------------------
@@ -145,6 +146,83 @@ def get_gift_by_id(gift_id):
     except (TypeError, ValueError):
         return None
     return next((g for g in GIFTS if g['id'] == gift_id), None)
+
+
+def gift_price_for_user(db, gift, user):
+    """Platform keeps 100% of gift sales; premium members get a discount."""
+    price = int(gift['price_cents'])
+    settings = get_platform_settings(db)
+    if user and user.is_premium_active():
+        pct = max(0, min(50, int(settings.premium_gift_discount_percent or 0)))
+        if pct:
+            price = max(50, price - (price * pct // 100))
+    return price
+
+
+def record_platform_payment(db, *, kind, username, amount_cents, currency, description,
+                            reference_id=None, stripe_session_id=None, stripe_payment_intent=None,
+                            status='paid', meta=None):
+    """Every paid dollar is logged so the admin can see earnings."""
+    existing = None
+    if reference_id:
+        existing = db.scalar(select(PlatformPayment).where(
+            PlatformPayment.reference_id == reference_id,
+            PlatformPayment.kind == kind,
+            PlatformPayment.status == 'paid',
+        ))
+    if existing:
+        return existing
+    row = PlatformPayment(
+        id=new_id(),
+        kind=kind,
+        username=username,
+        amount_cents=int(amount_cents),
+        currency=(currency or STRIPE_CURRENCY),
+        status=status,
+        description=description or '',
+        reference_id=reference_id,
+        stripe_session_id=stripe_session_id,
+        stripe_payment_intent=stripe_payment_intent,
+        meta_json=json.dumps(meta or {}),
+        created_at=utcnow(),
+        paid_at=utcnow() if status == 'paid' else None,
+    )
+    db.add(row)
+    db.flush()
+    return row
+
+
+def extend_datetime(current, days):
+    base = current
+    if base:
+        if base.tzinfo is None:
+            base = base.replace(tzinfo=timezone.utc)
+        if base < utcnow():
+            base = utcnow()
+    else:
+        base = utcnow()
+    return base + timedelta(days=int(days))
+
+
+def fulfill_platform_product(db, payment: PlatformPayment):
+    """Activate premium/boost after successful payment (idempotent)."""
+    if payment.status == 'paid' and payment.paid_at and payment.kind in ('premium', 'boost'):
+        # still ensure entitlements applied
+        pass
+    user = db.get(User, payment.username)
+    if not user:
+        payment.status = 'error'
+        return payment
+    settings = get_platform_settings(db)
+    if payment.kind == 'premium':
+        user.premium_until = extend_datetime(user.premium_until, settings.premium_days or 30)
+        payment.description = payment.description or f'Premium {settings.premium_days} days'
+    elif payment.kind == 'boost':
+        user.boost_until = extend_datetime(user.boost_until, settings.boost_days or 7)
+        payment.description = payment.description or f'Profile boost {settings.boost_days} days'
+    payment.status = 'paid'
+    payment.paid_at = payment.paid_at or utcnow()
+    return payment
 
 
 def send_email(recipient, subject, html_content):
@@ -829,6 +907,8 @@ def search_user():
         d = u.public_dict()
         d['connected'] = are_connected(db, me, u.username)
         results.append(d)
+    # Boosted profiles first (admin monetization), then premium, then others
+    results.sort(key=lambda r: (0 if r.get('is_boosted') else 1, 0 if r.get('is_premium') else 1, r['username'].lower()))
     return jsonify({'success': True, 'results': results}), 200
 
 
@@ -1110,17 +1190,41 @@ def fulfill_gift_order(db, order: Order):
     track_event(db, 'gift_bought', order.from_user)
     order.delivered = True
     order.delivered_at = utcnow()
+    # Admin revenue: 100% of gift sale goes to the platform Stripe account
+    record_platform_payment(
+        db,
+        kind='gift',
+        username=order.from_user,
+        amount_cents=order.price_cents,
+        currency=order.currency,
+        description=f"Gift sale: {gift['name']} → @{order.to_user}",
+        reference_id=order.id,
+        stripe_session_id=order.stripe_session_id,
+        stripe_payment_intent=order.stripe_payment_intent,
+        meta={'gift_id': gift['id'], 'to': order.to_user},
+    )
     return order
 
 
 @app.route('/api/gifts')
 def get_gifts():
-    catalog = [{
-        **g,
-        'price': format_price(g['price_cents']),
-        'currency': STRIPE_CURRENCY.upper(),
-        'purchasable': True,
-    } for g in GIFTS]
+    db = get_db()
+    user = db.get(User, session['user_id']) if session.get('user_id') else None
+    settings = get_platform_settings(db)
+    catalog = []
+    for g in GIFTS:
+        charged = gift_price_for_user(db, g, user)
+        catalog.append({
+            **g,
+            'list_price_cents': g['price_cents'],
+            'price_cents': charged,
+            'price': format_price(charged),
+            'list_price': format_price(g['price_cents']),
+            'discount_applied': charged < g['price_cents'],
+            'currency': STRIPE_CURRENCY.upper(),
+            'purchasable': True,
+            'premium_discount_percent': settings.premium_gift_discount_percent if (user and user.is_premium_active()) else 0,
+        })
     return jsonify(catalog), 200
 
 
@@ -1140,9 +1244,11 @@ def create_gift_checkout():
     if not ok:
         return jsonify({'success': False, 'message': err}), 403
 
+    sender_user = db.get(User, sender)
+    charged = gift_price_for_user(db, gift, sender_user)
     order = Order(
         id=new_id(), gift_id=gift['id'], gift_name=gift['name'],
-        price_cents=gift['price_cents'], currency=STRIPE_CURRENCY,
+        price_cents=charged, currency=STRIPE_CURRENCY,
         from_user=sender, to_user=recipient, message=note,
         status='pending', created_at=utcnow(),
     )
@@ -1170,7 +1276,7 @@ def create_gift_checkout():
             line_items=[{
                 'price_data': {
                     'currency': STRIPE_CURRENCY,
-                    'unit_amount': gift['price_cents'],
+                    'unit_amount': charged,
                     'product_data': {
                         'name': f"{gift['emoji']} {gift['name']}",
                         'description': f'Gift for @{recipient} on {APP_NAME}' + (f' — {note}' if note else ''),
@@ -1181,8 +1287,14 @@ def create_gift_checkout():
             success_url=f"{base}/gifts/success?session_id={{CHECKOUT_SESSION_ID}}",
             cancel_url=f"{base}/gifts/cancel?session_id={{CHECKOUT_SESSION_ID}}",
             client_reference_id=order.id,
-            customer_email=db.get(User, sender).email,
-            metadata={'order_id': order.id, 'gift_id': str(gift['id']), 'from': sender, 'to': recipient},
+            customer_email=sender_user.email,
+            metadata={
+                'product_type': 'gift',
+                'order_id': order.id,
+                'gift_id': str(gift['id']),
+                'from': sender,
+                'to': recipient,
+            },
         )
         order.stripe_session_id = checkout_session.id
         db.commit()
@@ -1222,18 +1334,30 @@ def stripe_webhook():
         payment_status = data_object.get('payment_status') if isinstance(data_object, dict) else data_object.payment_status
         if payment_status == 'paid':
             metadata = data_object.get('metadata') if isinstance(data_object, dict) else (data_object.metadata or {})
+            product_type = (metadata.get('product_type') if metadata else None) or 'gift'
             order_id = metadata.get('order_id') if metadata else None
+            payment_id = metadata.get('payment_id') if metadata else None
             session_id = data_object.get('id') if isinstance(data_object, dict) else data_object.id
             payment_intent = data_object.get('payment_intent') if isinstance(data_object, dict) else data_object.payment_intent
             db = get_db()
-            order = db.get(Order, order_id) if order_id else None
-            if not order and session_id:
-                order = db.scalar(select(Order).where(Order.stripe_session_id == session_id))
-            if order:
-                order.stripe_session_id = session_id
-                order.stripe_payment_intent = payment_intent
-                fulfill_gift_order(db, order)
-                db.commit()
+            if product_type in ('premium', 'boost'):
+                payment = db.get(PlatformPayment, payment_id) if payment_id else None
+                if not payment and session_id:
+                    payment = db.scalar(select(PlatformPayment).where(PlatformPayment.stripe_session_id == session_id))
+                if payment:
+                    payment.stripe_session_id = session_id
+                    payment.stripe_payment_intent = payment_intent
+                    fulfill_platform_product(db, payment)
+                    db.commit()
+            else:
+                order = db.get(Order, order_id) if order_id else None
+                if not order and session_id:
+                    order = db.scalar(select(Order).where(Order.stripe_session_id == session_id))
+                if order:
+                    order.stripe_session_id = session_id
+                    order.stripe_payment_intent = payment_intent
+                    fulfill_gift_order(db, order)
+                    db.commit()
     return jsonify({'received': True}), 200
 
 
@@ -1259,6 +1383,312 @@ def get_my_orders():
     db = get_db()
     rows = db.scalars(select(Order).where(Order.from_user == session['user_id']).order_by(desc(Order.created_at)))
     return jsonify([o.to_dict() for o in rows]), 200
+
+
+# ---------------------------------------------------------------------------
+# Admin monetization — Premium, Boosts, revenue ledger
+# Gifts + Premium + Boosts are paid to the platform Stripe account.
+# Admin withdraws via Stripe Dashboard payouts.
+# ---------------------------------------------------------------------------
+@app.route('/api/monetization')
+def monetization_catalog():
+    db = get_db()
+    settings = get_platform_settings(db)
+    me = None
+    if session.get('user_id'):
+        me = db.get(User, session['user_id'])
+    return jsonify({
+        'enabled': bool(settings.monetization_enabled),
+        'currency': (settings.currency or STRIPE_CURRENCY).upper(),
+        'stripe_enabled': STRIPE_ENABLED,
+        'premium': {
+            'price_cents': settings.premium_price_cents,
+            'price': format_price(settings.premium_price_cents, settings.currency),
+            'days': settings.premium_days,
+            'gift_discount_percent': settings.premium_gift_discount_percent,
+            'benefits': [
+                f'{settings.premium_gift_discount_percent}% off all gifts',
+                'Premium badge on your profile',
+                'Higher visibility in Discover',
+            ],
+            'active': bool(me and me.is_premium_active()),
+            'until': me.premium_until.isoformat() if me and me.premium_until else None,
+        },
+        'boost': {
+            'price_cents': settings.boost_price_cents,
+            'price': format_price(settings.boost_price_cents, settings.currency),
+            'days': settings.boost_days,
+            'benefits': [
+                f'Featured at the top of Discover for {settings.boost_days} days',
+                'Boosted badge on your profile',
+            ],
+            'active': bool(me and me.is_boosted()),
+            'until': me.boost_until.isoformat() if me and me.boost_until else None,
+        },
+        'how_admin_earns': [
+            '100% of gift purchases go to the platform Stripe account',
+            '100% of Premium memberships go to the platform',
+            '100% of Profile Boosts go to the platform',
+            'Withdraw anytime from Stripe Dashboard → Balances → Payouts',
+        ],
+    }), 200
+
+
+def _create_platform_checkout(db, *, kind, username, amount_cents, description):
+    settings = get_platform_settings(db)
+    if not settings.monetization_enabled:
+        return None, ({'success': False, 'message': 'Monetization is disabled'}, 503)
+    user = db.get(User, username)
+    payment = PlatformPayment(
+        id=new_id(),
+        kind=kind,
+        username=username,
+        amount_cents=amount_cents,
+        currency=settings.currency or STRIPE_CURRENCY,
+        status='pending',
+        description=description,
+        reference_id=new_id(),
+        created_at=utcnow(),
+    )
+    db.add(payment)
+    db.flush()
+    base = get_app_url()
+
+    if not STRIPE_ENABLED:
+        if IS_PRODUCTION:
+            db.rollback()
+            return None, ({'success': False, 'message': 'Payments are not configured.'}, 503)
+        payment.meta_json = json.dumps({'payment_mode': 'demo'})
+        fulfill_platform_product(db, payment)
+        db.commit()
+        return payment, ({
+            'success': True,
+            'demo': True,
+            'message': f'Demo {kind} activated (configure Stripe for real payments)',
+            'payment': payment.to_dict(),
+            'user': user.private_dict() if user else None,
+            'checkout_url': None,
+        }, 200)
+
+    try:
+        checkout_session = stripe.checkout.Session.create(
+            mode='payment',
+            payment_method_types=['card'],
+            line_items=[{
+                'price_data': {
+                    'currency': settings.currency or STRIPE_CURRENCY,
+                    'unit_amount': amount_cents,
+                    'product_data': {
+                        'name': description,
+                        'description': f'{APP_NAME} platform purchase',
+                    },
+                },
+                'quantity': 1,
+            }],
+            success_url=f"{base}/billing/success?session_id={{CHECKOUT_SESSION_ID}}",
+            cancel_url=f"{base}/billing/cancel?session_id={{CHECKOUT_SESSION_ID}}",
+            client_reference_id=payment.id,
+            customer_email=user.email,
+            metadata={
+                'product_type': kind,
+                'payment_id': payment.id,
+                'username': username,
+            },
+        )
+        payment.stripe_session_id = checkout_session.id
+        db.commit()
+        return payment, ({
+            'success': True,
+            'checkout_url': checkout_session.url,
+            'session_id': checkout_session.id,
+            'payment_id': payment.id,
+        }, 200)
+    except Exception as e:
+        db.rollback()
+        return None, ({'success': False, 'message': f'Payment error: {str(e)}'}, 500)
+
+
+@app.route('/api/billing/premium/checkout', methods=['POST'])
+@verified_required
+@limiter.limit('10 per minute')
+def checkout_premium():
+    db = get_db()
+    settings = get_platform_settings(db)
+    _, result = _create_platform_checkout(
+        db,
+        kind='premium',
+        username=session['user_id'],
+        amount_cents=settings.premium_price_cents,
+        description=f'{APP_NAME} Premium ({settings.premium_days} days)',
+    )
+    return jsonify(result[0]), result[1]
+
+
+@app.route('/api/billing/boost/checkout', methods=['POST'])
+@verified_required
+@limiter.limit('10 per minute')
+def checkout_boost():
+    db = get_db()
+    settings = get_platform_settings(db)
+    _, result = _create_platform_checkout(
+        db,
+        kind='boost',
+        username=session['user_id'],
+        amount_cents=settings.boost_price_cents,
+        description=f'{APP_NAME} Profile Boost ({settings.boost_days} days)',
+    )
+    return jsonify(result[0]), result[1]
+
+
+@app.route('/billing/success')
+@login_required
+def billing_success():
+    session_id = request.args.get('session_id', '').strip()
+    if session_id and STRIPE_ENABLED:
+        try:
+            checkout = stripe.checkout.Session.retrieve(session_id)
+            if checkout.payment_status == 'paid':
+                db = get_db()
+                payment_id = (checkout.metadata or {}).get('payment_id')
+                payment = db.get(PlatformPayment, payment_id) if payment_id else None
+                if not payment:
+                    payment = db.scalar(select(PlatformPayment).where(PlatformPayment.stripe_session_id == session_id))
+                if payment:
+                    payment.stripe_session_id = session_id
+                    payment.stripe_payment_intent = checkout.get('payment_intent')
+                    fulfill_platform_product(db, payment)
+                    db.commit()
+        except Exception as e:
+            print(f'Billing success fulfill error: {e}')
+    return redirect(url_for('dashboard') + '?billing=success')
+
+
+@app.route('/billing/cancel')
+@login_required
+def billing_cancel():
+    session_id = request.args.get('session_id', '').strip()
+    if session_id:
+        db = get_db()
+        payment = db.scalar(select(PlatformPayment).where(PlatformPayment.stripe_session_id == session_id))
+        if payment and payment.status == 'pending':
+            payment.status = 'cancelled'
+            db.commit()
+    return redirect(url_for('dashboard') + '?billing=cancelled')
+
+
+@app.route('/api/admin/monetization', methods=['GET', 'POST'])
+@admin_required
+def admin_monetization_settings():
+    db = get_db()
+    settings = get_platform_settings(db)
+    if request.method == 'GET':
+        return jsonify(settings.to_dict()), 200
+    data = request.json or {}
+    if 'monetization_enabled' in data:
+        settings.monetization_enabled = bool(data['monetization_enabled'])
+    for key, lo, hi in (
+        ('premium_price_cents', 100, 1000000),
+        ('boost_price_cents', 100, 1000000),
+        ('premium_days', 1, 365),
+        ('boost_days', 1, 90),
+        ('premium_gift_discount_percent', 0, 50),
+    ):
+        if key in data:
+            try:
+                val = int(data[key])
+            except (TypeError, ValueError):
+                return jsonify({'success': False, 'message': f'Invalid {key}'}), 400
+            if not (lo <= val <= hi):
+                return jsonify({'success': False, 'message': f'{key} must be between {lo} and {hi}'}), 400
+            setattr(settings, key, val)
+    if 'payout_note' in data:
+        settings.payout_note = str(data['payout_note'])[:500]
+    if 'currency' in data:
+        settings.currency = str(data['currency']).lower()[:8]
+    settings.updated_at = utcnow()
+    db.commit()
+    return jsonify({'success': True, 'settings': settings.to_dict()}), 200
+
+
+@app.route('/api/admin/revenue')
+@admin_required
+def admin_revenue():
+    db = get_db()
+    settings = get_platform_settings(db)
+    paid = list(db.scalars(select(PlatformPayment).where(PlatformPayment.status == 'paid')))
+    by_kind = {'gift': 0, 'premium': 0, 'boost': 0}
+    for p in paid:
+        by_kind[p.kind] = by_kind.get(p.kind, 0) + (p.amount_cents or 0)
+    total = sum(by_kind.values())
+    recent = list(db.scalars(
+        select(PlatformPayment).where(PlatformPayment.status.in_(['paid', 'refunded']))
+        .order_by(desc(PlatformPayment.created_at)).limit(100)
+    ))
+    premium_users = db.scalar(select(func.count()).select_from(User).where(User.premium_until.is_not(None))) or 0
+    boosted_users = db.scalar(select(func.count()).select_from(User).where(User.boost_until.is_not(None))) or 0
+    return jsonify({
+        'total_revenue_cents': total,
+        'total_revenue': format_price(total),
+        'by_kind_cents': by_kind,
+        'by_kind': {k: format_price(v) for k, v in by_kind.items()},
+        'paid_payments': len(paid),
+        'active_premium_approx': premium_users,
+        'boosted_approx': boosted_users,
+        'payout_note': settings.payout_note,
+        'stripe_enabled': STRIPE_ENABLED,
+        'settings': settings.to_dict(),
+        'recent': [p.to_dict() for p in recent],
+        'how_to_withdraw': (
+            '1) Open https://dashboard.stripe.com/balance/overview\n'
+            '2) Connect a bank account if needed\n'
+            '3) Request a payout — gift, Premium, and Boost payments all land in this Stripe account'
+        ),
+    }), 200
+
+
+@app.route('/api/admin/revenue/<payment_id>/refund', methods=['POST'])
+@admin_required
+def admin_refund_platform_payment(payment_id):
+    db = get_db()
+    payment = db.get(PlatformPayment, str(payment_id))
+    if not payment:
+        return jsonify({'success': False, 'message': 'Payment not found'}), 404
+    if payment.status != 'paid':
+        return jsonify({'success': False, 'message': 'Only paid items can be refunded'}), 400
+    if payment.kind == 'gift':
+        return jsonify({'success': False, 'message': 'Refund gift orders from the Orders section'}), 400
+
+    def _deactivate():
+        user = db.get(User, payment.username)
+        if not user:
+            return
+        # Best-effort: clear entitlement immediately on refund
+        if payment.kind == 'premium':
+            user.premium_until = utcnow()
+        elif payment.kind == 'boost':
+            user.boost_until = utcnow()
+
+    meta = {}
+    try:
+        meta = json.loads(payment.meta_json or '{}')
+    except Exception:
+        pass
+    if meta.get('payment_mode') == 'demo' or not payment.stripe_payment_intent or not STRIPE_ENABLED:
+        payment.status = 'refunded'
+        payment.refunded_at = utcnow()
+        _deactivate()
+        db.commit()
+        return jsonify({'success': True, 'message': 'Marked refunded', 'payment': payment.to_dict()}), 200
+    try:
+        refund = stripe.Refund.create(payment_intent=payment.stripe_payment_intent)
+        payment.status = 'refunded'
+        payment.stripe_refund_id = refund.id
+        payment.refunded_at = utcnow()
+        _deactivate()
+        db.commit()
+        return jsonify({'success': True, 'message': 'Refund issued', 'payment': payment.to_dict()}), 200
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 # ---------------------------------------------------------------------------
@@ -1671,6 +2101,12 @@ def refund_order(order_id):
     if order.payment_mode == 'demo' or not order.stripe_payment_intent or not STRIPE_ENABLED:
         order.status = 'refunded'
         order.refunded_at = utcnow()
+        ledger = db.scalar(select(PlatformPayment).where(
+            PlatformPayment.reference_id == order.id, PlatformPayment.kind == 'gift'
+        ))
+        if ledger and ledger.status == 'paid':
+            ledger.status = 'refunded'
+            ledger.refunded_at = utcnow()
         db.commit()
         return jsonify({'success': True, 'message': 'Order marked refunded', 'order': order.to_dict()}), 200
     try:
@@ -1678,6 +2114,13 @@ def refund_order(order_id):
         order.status = 'refunded'
         order.stripe_refund_id = refund.id
         order.refunded_at = utcnow()
+        ledger = db.scalar(select(PlatformPayment).where(
+            PlatformPayment.reference_id == order.id, PlatformPayment.kind == 'gift'
+        ))
+        if ledger and ledger.status == 'paid':
+            ledger.status = 'refunded'
+            ledger.stripe_refund_id = refund.id
+            ledger.refunded_at = utcnow()
         db.commit()
         return jsonify({'success': True, 'message': 'Refund issued', 'order': order.to_dict()}), 200
     except Exception as e:
@@ -1689,7 +2132,11 @@ def refund_order(order_id):
 def get_admin_stats():
     db = get_db()
     paid_orders = list(db.scalars(select(Order).where(Order.status == 'paid')))
-    revenue_cents = sum(o.price_cents or 0 for o in paid_orders)
+    paid_platform = list(db.scalars(select(PlatformPayment).where(PlatformPayment.status == 'paid')))
+    revenue_cents = sum(p.amount_cents or 0 for p in paid_platform) or sum(o.price_cents or 0 for o in paid_orders)
+    by_kind = {'gift': 0, 'premium': 0, 'boost': 0}
+    for p in paid_platform:
+        by_kind[p.kind] = by_kind.get(p.kind, 0) + (p.amount_cents or 0)
     return jsonify({
         'total_users': db.scalar(select(func.count()).select_from(User)) or 0,
         'total_valentine_requests': db.scalar(select(func.count()).select_from(ConnectionRequest)) or 0,
@@ -1706,6 +2153,8 @@ def get_admin_stats():
         'open_reports': db.scalar(select(func.count()).select_from(Report).where(Report.status == 'open')) or 0,
         'revenue_cents': revenue_cents,
         'revenue': format_price(revenue_cents),
+        'revenue_by_kind': {k: format_price(v) for k, v in by_kind.items()},
+        'revenue_by_kind_cents': by_kind,
         'stripe_enabled': STRIPE_ENABLED,
         'mail_configured': MAIL_CONFIGURED,
     }), 200

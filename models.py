@@ -55,8 +55,25 @@ class User(Base):
     email_on_like = Column(Boolean, default=False)
     email_on_follow = Column(Boolean, default=False)
     email_on_gift = Column(Boolean, default=True)
+    premium_until = Column(DateTime(timezone=True), nullable=True)
+    boost_until = Column(DateTime(timezone=True), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    def _aware(self, dt):
+        if not dt:
+            return None
+        if dt.tzinfo is None:
+            return dt.replace(tzinfo=timezone.utc)
+        return dt
+
+    def is_premium_active(self):
+        until = self._aware(self.premium_until)
+        return bool(until and until > utcnow())
+
+    def is_boosted(self):
+        until = self._aware(self.boost_until)
+        return bool(until and until > utcnow())
 
     def public_dict(self):
         return {
@@ -66,6 +83,10 @@ class User(Base):
             'interests': self.interests or '',
             'relationship_status': self.relationship_status or 'Open',
             'created_at': self.created_at.isoformat() if self.created_at else None,
+            'is_premium': self.is_premium_active(),
+            'is_boosted': self.is_boosted(),
+            'premium_until': self._aware(self.premium_until).isoformat() if self.premium_until else None,
+            'boost_until': self._aware(self.boost_until).isoformat() if self.boost_until else None,
         }
 
     def private_dict(self):
@@ -350,8 +371,128 @@ class UserAnalytics(Base):
         }
 
 
+class PlatformSettings(Base):
+    """Singleton row (id=1) controlling how the admin earns money."""
+    __tablename__ = 'platform_settings'
+
+    id = Column(Integer, primary_key=True, default=1)
+    monetization_enabled = Column(Boolean, default=True)
+    premium_price_cents = Column(Integer, default=999)       # $9.99 / period
+    premium_days = Column(Integer, default=30)
+    boost_price_cents = Column(Integer, default=499)         # $4.99
+    boost_days = Column(Integer, default=7)
+    premium_gift_discount_percent = Column(Integer, default=10)  # Premium users save on gifts
+    currency = Column(String(8), default='usd')
+    payout_note = Column(Text, default='Money is collected in your Stripe account. Withdraw from Stripe Dashboard → Balances → Payouts.')
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)
+
+    def to_dict(self):
+        return {
+            'monetization_enabled': bool(self.monetization_enabled),
+            'premium_price_cents': self.premium_price_cents or 0,
+            'premium_days': self.premium_days or 30,
+            'boost_price_cents': self.boost_price_cents or 0,
+            'boost_days': self.boost_days or 7,
+            'premium_gift_discount_percent': self.premium_gift_discount_percent or 0,
+            'currency': (self.currency or 'usd').upper(),
+            'payout_note': self.payout_note or '',
+            'updated_at': self.updated_at.isoformat() if self.updated_at else None,
+        }
+
+
+class PlatformPayment(Base):
+    """Ledger of every dollar that belongs to the admin/platform."""
+    __tablename__ = 'platform_payments'
+
+    id = Column(String(36), primary_key=True, default=new_id)
+    kind = Column(String(32), nullable=False, index=True)  # gift | premium | boost
+    username = Column(String(64), nullable=False, index=True)
+    amount_cents = Column(Integer, nullable=False)
+    currency = Column(String(8), default='usd')
+    status = Column(String(16), default='pending')  # pending|paid|refunded|cancelled
+    description = Column(Text, default='')
+    reference_id = Column(String(64), nullable=True, index=True)  # order id etc.
+    stripe_session_id = Column(String(255), nullable=True, index=True)
+    stripe_payment_intent = Column(String(255), nullable=True)
+    stripe_refund_id = Column(String(255), nullable=True)
+    meta_json = Column(Text, default='{}')
+    created_at = Column(DateTime(timezone=True), default=utcnow)
+    paid_at = Column(DateTime(timezone=True), nullable=True)
+    refunded_at = Column(DateTime(timezone=True), nullable=True)
+
+    def to_dict(self):
+        meta = {}
+        try:
+            meta = json.loads(self.meta_json or '{}')
+        except Exception:
+            meta = {}
+        return {
+            'id': self.id,
+            'kind': self.kind,
+            'username': self.username,
+            'amount_cents': self.amount_cents,
+            'currency': self.currency,
+            'status': self.status,
+            'description': self.description or '',
+            'reference_id': self.reference_id,
+            'stripe_session_id': self.stripe_session_id,
+            'stripe_payment_intent': self.stripe_payment_intent,
+            'stripe_refund_id': self.stripe_refund_id,
+            'meta': meta,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'paid_at': self.paid_at.isoformat() if self.paid_at else None,
+            'refunded_at': self.refunded_at.isoformat() if self.refunded_at else None,
+        }
+
+
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _ensure_monetization_schema()
+    _ensure_default_settings()
+
+
+def _ensure_monetization_schema():
+    """Add new columns on existing DBs (SQLite/Postgres)."""
+    from sqlalchemy import text, inspect
+    try:
+        insp = inspect(engine)
+        if 'users' not in insp.get_table_names():
+            return
+        cols = {c['name'] for c in insp.get_columns('users')}
+        alters = []
+        if 'premium_until' not in cols:
+            alters.append('ALTER TABLE users ADD COLUMN premium_until DATETIME')
+        if 'boost_until' not in cols:
+            alters.append('ALTER TABLE users ADD COLUMN boost_until DATETIME')
+        if alters:
+            with engine.begin() as conn:
+                for stmt in alters:
+                    conn.execute(text(stmt))
+    except Exception as e:
+        print(f'[schema] monetization migrate note: {e}')
+
+
+def _ensure_default_settings():
+    db = SessionLocal()
+    try:
+        row = db.get(PlatformSettings, 1)
+        if not row:
+            db.add(PlatformSettings(id=1))
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f'[settings] init note: {e}')
+    finally:
+        db.close()
+
+
+def get_platform_settings(db: Session) -> PlatformSettings:
+    row = db.get(PlatformSettings, 1)
+    if not row:
+        row = PlatformSettings(id=1)
+        db.add(row)
+        db.flush()
+    return row
 
 
 def get_db() -> Session:
