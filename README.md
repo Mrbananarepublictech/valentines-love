@@ -1,88 +1,50 @@
 # TextLink — Connect, Text & Send Gifts
 
-A production-ready messaging platform where people create accounts, send connection requests, chat in real time, and buy digital gifts with real money via Stripe.
+Production messaging platform with email confirmation, SQL database, Stripe gifts, inbox, moderation, and account self-service.
 
 ## Features
 
-- Profiles (photo, bio, interests)
-- Connection requests (send / accept / decline)
-- Real-time chat (Socket.IO) + image sharing
-- **Buy & send gifts** with Stripe Checkout (real card payments)
-- Custom cards, likes, follows, block/report
-- Notifications, analytics, admin dashboard
-- Email notifications (optional SMTP)
+- **Email confirmation** on register (+ resend)
+- Password reset & change password
+- SQLAlchemy DB (SQLite by default, Postgres via `DATABASE_URL`)
+- Connection requests gate messaging/gifts/cards
+- Conversation inbox + paginated chat
+- File uploads for avatars/chat images (validated with Pillow)
+- Stripe gift checkout, webhook fulfill, admin refunds
+- Admin: users, ban/unban, reports resolve, order ledger
+- Block/report, analytics, cards, likes, follows
+- Rate limiting on auth & payments
+- Account export & delete
 
-## Quick start (local)
+## Quick start
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 cp .env.example .env
-python app.py
+python3 app.py
 ```
 
 Open http://localhost:5000
 
-Without Stripe keys, gift checkout runs in **demo mode** (no charge; gift is delivered instantly) so you can test the flow.
+Without SMTP configured in development, new accounts are auto-verified (or you get a `dev_verify_link`). In production, set `MAIL_*` and `REQUIRE_EMAIL_CONFIRM=true`.
 
-## Stripe (real money gifts)
+## Important env vars
 
-1. Create a [Stripe](https://dashboard.stripe.com) account.
-2. Copy **Secret key** and **Publishable key** into `.env` / your host env:
-   - `STRIPE_SECRET_KEY=sk_test_…`
-   - `STRIPE_PUBLISHABLE_KEY=pk_test_…`
-3. Set `APP_URL` to your public URL (required for Checkout redirects), e.g. `https://your-app.up.railway.app`
-4. Add a webhook endpoint: `https://your-domain/api/stripe/webhook`  
-   Event: `checkout.session.completed`  
-   Set `STRIPE_WEBHOOK_SECRET=whsec_…`
-5. Use test cards (`4242 4242 4242 4242`) until you switch to live keys (`sk_live_…` / `pk_live_…`).
-
-### Gift purchase flow
-
-1. User opens **Buy Gifts**, picks a gift, enters recipient + optional note.
-2. App creates a Stripe Checkout Session (`POST /api/gifts/checkout`).
-3. User pays on Stripe’s hosted page.
-4. Stripe webhook (and/or `/gifts/success`) marks the order paid and delivers the gift to chat + notifications.
-
-## Production env vars
-
-| Variable | Required | Notes |
-|----------|----------|--------|
-| `SECRET_KEY` | Yes | Long random string |
-| `FLASK_ENV` | Yes | `production` |
-| `APP_URL` | Yes (with Stripe) | Public https URL, no trailing slash |
-| `STRIPE_SECRET_KEY` | For live gifts | `sk_live_…` or `sk_test_…` |
-| `STRIPE_PUBLISHABLE_KEY` | For live gifts | Matching publishable key |
-| `STRIPE_WEBHOOK_SECRET` | Recommended | Webhook signing secret |
-| `STRIPE_CURRENCY` | No | Default `usd` |
-| `MAIL_*` | No | Optional email |
+| Variable | Purpose |
+|----------|---------|
+| `SECRET_KEY` | Required in production |
+| `FLASK_ENV=production` | Secure cookies, stricter payment rules |
+| `APP_URL` | Public URL for email/Stripe links |
+| `DATABASE_URL` | Optional Postgres URL |
+| `MAIL_*` | SMTP for confirmation & notifications |
+| `REQUIRE_EMAIL_CONFIRM` | Default `true` |
+| `REQUIRE_CONNECTION_TO_MESSAGE` | Default `true` |
+| `STRIPE_*` | Real gift payments |
 
 ## Deploy
 
-`Procfile` uses gunicorn + eventlet:
+`Procfile` → gunicorn + eventlet. Set env vars, add Stripe webhook to `/api/stripe/webhook`, configure SMTP for email confirmation.
 
-```
-web: gunicorn --worker-class eventlet -w 1 app:app
-```
+## Health
 
-Works on Railway, Render, Heroku, and similar platforms. Set the env vars above, deploy, then configure the Stripe webhook to your live URL.
-
-## Health check
-
-`GET /api/health` → `{ status, app, stripe, env }`
-
-## Project layout
-
-- `app.py` — Flask + Socket.IO + Stripe
-- `templates/` — login, dashboard, admin
-- `data/` — JSON storage (users, messages, orders, gifts, …)
-- `.env.example` — env template
-
-## Security notes
-
-- Passwords hashed with Werkzeug
-- Secure cookies when `FLASK_ENV=production`
-- ProxyFix for reverse proxies
-- Stripe webhook signature verification when `STRIPE_WEBHOOK_SECRET` is set
-- Atomic JSON writes with file locks
+`GET /api/health`

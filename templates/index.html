@@ -287,6 +287,7 @@
                     <button type="submit" class="btn-primary" style="width: 100%; margin-top: 10px;">
                         Login
                     </button>
+                    <p style="text-align:center;margin-top:14px;font-size:0.9em;"><a href="/forgot-password" style="color:#0f766e;font-weight:600;">Forgot password?</a></p>
                 </form>
             </div>
 
@@ -361,11 +362,11 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showMessage('✨ Logged in successfully!', 'success');
+                    showMessage('Logged in successfully!', 'success');
                     createHeartAnimation();
                     setTimeout(() => {
-                        window.location.href = '/dashboard';
-                    }, 1000);
+                        window.location.href = data.needs_verification ? '/verify-pending' : '/dashboard';
+                    }, 800);
                 } else {
                     showMessage(data.message, 'error');
                 }
@@ -394,10 +395,19 @@
                 const data = await response.json();
 
                 if (response.ok) {
-                    showMessage('✨ Account created! Please join our WhatsApp channel.', 'success');
                     createHeartAnimation();
-                    // Show WhatsApp join modal
-                    showWhatsAppModal();
+                    if (data.needs_verification) {
+                        showMessage(data.message || 'Check your email to confirm your account.', 'success');
+                        if (data.dev_verify_link) {
+                            showMessage('Dev: open the confirmation link shown next…', 'success');
+                            setTimeout(() => { window.location.href = data.dev_verify_link; }, 600);
+                        } else {
+                            setTimeout(() => { window.location.href = '/verify-pending'; }, 900);
+                        }
+                    } else {
+                        showMessage('Account created!', 'success');
+                        setTimeout(() => { window.location.href = '/dashboard'; }, 800);
+                    }
                 } else {
                     showMessage(data.message, 'error');
                 }

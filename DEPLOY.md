@@ -1,45 +1,36 @@
 # Deploy TextLink
 
-## 1. Push code & create a host project
-
-Recommended: **Railway** (or Render / Heroku). Connect the GitHub repo; the `Procfile` starts gunicorn + eventlet automatically.
-
-## 2. Set environment variables
+## Env vars
 
 **Required**
+- `SECRET_KEY`
+- `FLASK_ENV=production`
+- `APP_URL` (public HTTPS URL)
 
-- `SECRET_KEY` — long random string  
-- `FLASK_ENV=production`  
-- `APP_URL` — your public HTTPS URL (no trailing slash), e.g. `https://textlink.up.railway.app`
-
-**Stripe (real gift payments)**
-
-- `STRIPE_SECRET_KEY`  
-- `STRIPE_PUBLISHABLE_KEY`  
-- `STRIPE_WEBHOOK_SECRET`  
-- `STRIPE_CURRENCY=usd` (optional)
-
-**Email (optional)**
-
+**Email confirmation (required in production)**
 - `MAIL_SERVER`, `MAIL_PORT`, `MAIL_USE_TLS`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_DEFAULT_SENDER`
+- `REQUIRE_EMAIL_CONFIRM=true`
 
-## 3. Stripe webhook
+**Database**
+- Default: SQLite at `data/textlink.db` (fine for single-instance)
+- Recommended: `DATABASE_URL=postgresql://…` on Railway/Render
 
-In Stripe Dashboard → Developers → Webhooks:
+**Stripe gifts**
+- `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`
+- Webhook: `https://YOUR_DOMAIN/api/stripe/webhook` → `checkout.session.completed`
 
-- Endpoint URL: `https://YOUR_DOMAIN/api/stripe/webhook`
-- Event: `checkout.session.completed`
-- Paste the signing secret into `STRIPE_WEBHOOK_SECRET`
+**Optional**
+- `REQUIRE_CONNECTION_TO_MESSAGE=true`
+- `CORS_ORIGINS=https://YOUR_DOMAIN`
 
-Use **test** keys first (`sk_test_…` / `pk_test_…`), then switch to **live** keys when ready.
+## Procfile
 
-## 4. Verify
+```
+web: gunicorn --worker-class eventlet -w 1 app:app
+```
 
-- Open the site → register → **Buy Gifts** → pay with test card `4242 4242 4242 4242`
-- `GET /api/health` should show `"stripe": true` when keys are set
+## After deploy
 
-## Notes
-
-- Without Stripe keys, gifts still work in **demo mode** locally (no charge). In production, Stripe keys are required for purchases.
-- First registered user is automatically an admin.
-- See `README.md` for the full feature list and gift flow.
+1. Register → confirm email from inbox  
+2. Connect two users → message / buy gift  
+3. `/api/health` should show `mail` / `stripe` as expected  

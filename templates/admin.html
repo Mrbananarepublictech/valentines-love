@@ -227,8 +227,8 @@
                         <th>Username</th>
                         <th>Email</th>
                         <th>Role</th>
+                        <th>Verified</th>
                         <th>Followers</th>
-                        <th>Following</th>
                         <th>Likes</th>
                         <th>Joined</th>
                         <th>Actions</th>
@@ -238,6 +238,16 @@
                     <tr><td colspan="8" style="text-align: center;">Loading users...</td></tr>
                 </tbody>
             </table>
+        </div>
+
+        <div class="section">
+            <h2>🚨 Open Reports</h2>
+            <div id="reportsList">Loading…</div>
+        </div>
+
+        <div class="section">
+            <h2>💳 Gift Orders</h2>
+            <div id="ordersList">Loading…</div>
         </div>
     </div>
     
@@ -285,8 +295,12 @@
                         <div class="number" style="color: #ffc400;">${stats.pending_requests}</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Stripe</h3>
-                        <div class="number" style="font-size:1.1em; color:${stats.stripe_enabled ? '#4caf50' : '#ff1744'};">${stats.stripe_enabled ? 'Live' : 'Off'}</div>
+                        <h3>Open Reports</h3>
+                        <div class="number" style="color:#ff1744;">${stats.open_reports || 0}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Stripe / Mail</h3>
+                        <div class="number" style="font-size:1em;">${stats.stripe_enabled ? 'Stripe✓' : 'Stripe✗'} / ${stats.mail_configured ? 'Mail✓' : 'Mail✗'}</div>
                     </div>
                 `;
                 
@@ -305,7 +319,9 @@
                 
                 let html = '';
                 for (const user of users) {
-                    const roleStr = user.is_admin ? '<span class="badge badge-admin">Admin</span>' : '<span class="badge badge-user">User</span>';
+                    const roleStr = user.is_banned
+                        ? '<span class="badge badge-user" style="background:#ff1744;color:#fff;">Banned</span>'
+                        : (user.is_admin ? '<span class="badge badge-admin">Admin</span>' : '<span class="badge badge-user">User</span>');
                     const joinedDate = new Date(user.created_at).toLocaleDateString();
                     
                     html += `
@@ -313,13 +329,14 @@
                             <td><strong>${user.username}</strong></td>
                             <td>${user.email}</td>
                             <td>${roleStr}</td>
+                            <td>${user.email_verified ? 'Yes' : 'No'}</td>
                             <td>${user.followers}</td>
-                            <td>${user.following}</td>
                             <td>${user.likes_received}</td>
                             <td>${joinedDate}</td>
                             <td>
                                 ${!user.is_admin ? `<button class="action-btn btn-admin" onclick="makeAdmin('${user.username}')">Make Admin</button>` : ''}
                                 ${user.is_admin ? `<button class="action-btn btn-remove" onclick="removeAdmin('${user.username}')">Remove Admin</button>` : ''}
+                                ${!user.is_banned ? `<button class="action-btn btn-remove" onclick="banUser('${user.username}')">Ban</button>` : `<button class="action-btn btn-admin" onclick="unbanUser('${user.username}')">Unban</button>`}
                                 <button class="action-btn btn-delete" onclick="deleteUser('${user.username}')">Delete</button>
                             </td>
                         </tr>
@@ -391,6 +408,98 @@
             }
         }
         
+        async function banUser(username) {
+            const reason = prompt(`Ban reason for ${username}:`) || '';
+            if (!confirm(`Ban ${username}?`)) return;
+            const res = await fetch(`/api/admin/users/${username}/ban`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason })
+            });
+            const data = await res.json();
+            showMessage(data.success ? 'success' : 'error', data.message);
+            loadUsers();
+        }
+
+        async function unbanUser(username) {
+            const res = await fetch(`/api/admin/users/${username}/unban`, { method: 'POST' });
+            const data = await res.json();
+            showMessage(data.success ? 'success' : 'error', data.message);
+            loadUsers();
+        }
+
+        async function loadReports() {
+            try {
+                const res = await fetch('/api/admin/reports?status=open');
+                const reports = await res.json();
+                if (!reports.length) {
+                    document.getElementById('reportsList').innerHTML = '<p>No open reports.</p>';
+                    return;
+                }
+                document.getElementById('reportsList').innerHTML = reports.map(r => `
+                    <div style="background:#fff;padding:14px;border-radius:10px;margin-bottom:10px;">
+                        <strong>${r.reported}</strong> reported by ${r.reporter}<br>
+                        <span style="color:#666;">${r.reason}: ${r.message}</span><br>
+                        <button class="action-btn btn-admin" onclick="resolveReport('${r.id}', false)">Resolve</button>
+                        <button class="action-btn btn-remove" onclick="resolveReport('${r.id}', true)">Resolve + Ban</button>
+                        <button class="action-btn btn-delete" onclick="dismissReport('${r.id}')">Dismiss</button>
+                    </div>
+                `).join('');
+            } catch (e) {
+                document.getElementById('reportsList').innerHTML = '<p style="color:red;">Failed to load reports</p>';
+            }
+        }
+
+        async function resolveReport(id, ban) {
+            const note = prompt('Admin note:') || '';
+            const res = await fetch(`/api/admin/reports/${id}/resolve`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'resolve', admin_note: note, ban_user: ban })
+            });
+            const data = await res.json();
+            showMessage(data.success ? 'success' : 'error', data.success ? 'Report resolved' : data.message);
+            loadReports(); loadUsers(); loadStats();
+        }
+
+        async function dismissReport(id) {
+            const res = await fetch(`/api/admin/reports/${id}/resolve`, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'dismiss' })
+            });
+            const data = await res.json();
+            showMessage(data.success ? 'success' : 'error', data.success ? 'Dismissed' : data.message);
+            loadReports(); loadStats();
+        }
+
+        async function loadOrders() {
+            try {
+                const res = await fetch('/api/admin/orders');
+                const orders = await res.json();
+                if (!orders.length) {
+                    document.getElementById('ordersList').innerHTML = '<p>No orders yet.</p>';
+                    return;
+                }
+                document.getElementById('ordersList').innerHTML = `
+                    <table><thead><tr><th>Gift</th><th>From</th><th>To</th><th>Status</th><th>Amount</th><th></th></tr></thead>
+                    <tbody>${orders.map(o => `
+                        <tr>
+                            <td>${o.gift_name}</td><td>${o.from}</td><td>${o.to}</td>
+                            <td>${o.status}</td><td>$${(o.price_cents/100).toFixed(2)}</td>
+                            <td>${o.status === 'paid' ? `<button class="action-btn btn-remove" onclick="refundOrder('${o.id}')">Refund</button>` : ''}</td>
+                        </tr>`).join('')}
+                    </tbody></table>`;
+            } catch (e) {
+                document.getElementById('ordersList').innerHTML = '<p style="color:red;">Failed to load orders</p>';
+            }
+        }
+
+        async function refundOrder(id) {
+            if (!confirm('Refund this order?')) return;
+            const res = await fetch(`/api/admin/orders/${id}/refund`, { method: 'POST' });
+            const data = await res.json();
+            showMessage(data.success ? 'success' : 'error', data.message);
+            loadOrders(); loadStats();
+        }
+
         function showMessage(type, message) {
             const msgDiv = document.getElementById('message');
             msgDiv.className = type;
@@ -406,10 +515,12 @@
         window.addEventListener('load', () => {
             loadStats();
             loadUsers();
-            
-            // Refresh every 30 seconds
+            loadReports();
+            loadOrders();
             setInterval(loadStats, 30000);
             setInterval(loadUsers, 30000);
+            setInterval(loadReports, 30000);
+            setInterval(loadOrders, 30000);
         });
     </script>
 </body>
