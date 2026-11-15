@@ -171,6 +171,9 @@
             gap: 10px;
             margin-bottom: 30px;
             flex-wrap: wrap;
+            background: rgba(255,255,255,0.08);
+            padding: 12px;
+            border-radius: 14px;
         }
 
         .nav-tab {
@@ -492,7 +495,20 @@
             }
 
             .nav-tabs {
-                flex-direction: column;
+                flex-wrap: nowrap;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+                position: sticky;
+                bottom: 8px;
+                z-index: 90;
+                gap: 6px;
+            }
+
+            .nav-tab {
+                flex: 0 0 auto;
+                white-space: nowrap;
+                font-size: 0.85em;
+                padding: 8px 12px;
             }
 
             .button-group {
@@ -502,6 +518,8 @@
             button {
                 width: 100%;
             }
+
+            .header h1 { font-size: 1.25em; }
         }
 
         .social-share {
@@ -965,10 +983,12 @@
         <!-- Messages Tab -->
         <div id="messages" class="tab-content">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">💬 Chat</h3>
+                <h3 style="color: #0f766e; margin-bottom: 8px;">💬 Inbox</h3>
+                <p style="color:#64748b;margin-bottom:14px;font-size:0.92em;">Messaging requires an accepted connection request.</p>
+                <div id="conversationsList" style="margin-bottom:18px;"></div>
                 <div>
-                    <label style="display: block; color: #333; font-weight: 600; margin-bottom: 10px;">Chat with:</label>
-                    <input type="text" id="chatUser" placeholder="Enter username..." style="width: 100%; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 15px;" onchange="loadChat(); startChatAutoRefresh();">
+                    <label style="display: block; color: #333; font-weight: 600; margin-bottom: 10px;">Open chat with:</label>
+                    <input type="text" id="chatUser" placeholder="Connected username..." style="width: 100%; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 15px;" onchange="loadChat(); startChatAutoRefresh();">
                 </div>
                 <div class="message-chat" id="chatBox" style="display: none;">
                     <div class="messages-list" id="messagesList"></div>
@@ -976,9 +996,9 @@
                         <input type="text" id="chatMessage" placeholder="Type your message..." onkeypress="if(event.key==='Enter') sendChatMessage()">
                         <button onclick="sendChatMessage()">Send</button>
                     </div>
-                    <div style="margin-top: 10px; display: flex; gap: 10px;">
+                    <div style="margin-top: 10px; display: flex; gap: 10px; flex-wrap:wrap;">
                         <input type="file" id="imageShareInput" accept="image/*" style="flex: 1; padding: 10px; border: 2px solid #f0f0f0; border-radius: 8px;">
-                        <button onclick="shareImage()" class="btn-primary">📸 Share Image</button>
+                        <button onclick="shareImage()" class="btn-primary">Share Image</button>
                     </div>
                 </div>
             </div>
@@ -1017,23 +1037,33 @@
                         </label>
                     </div>
                     <div class="settings-item">
-                        <label for="emailCards">
-                            <input type="checkbox" id="emailCards" checked onchange="updateNotificationSettings()">
-                            <span>Notify me when I receive cards</span>
+                        <label for="emailGifts">
+                            <input type="checkbox" id="emailGifts" checked onchange="updateNotificationSettings()">
+                            <span>Notify me when I receive gifts</span>
                         </label>
                     </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4>🔐 Change password</h4>
+                    <input type="password" id="currentPassword" placeholder="Current password" style="width:100%;padding:10px;border:2px solid #f0f0f0;border-radius:8px;margin-bottom:8px;">
+                    <input type="password" id="newPassword" placeholder="New password (min 6)" style="width:100%;padding:10px;border:2px solid #f0f0f0;border-radius:8px;margin-bottom:8px;">
+                    <button class="btn-primary" style="width:100%;" onclick="changePassword()">Update password</button>
+                </div>
+
+                <div class="settings-section">
+                    <h4>📦 Your data</h4>
+                    <button class="btn-primary" style="width:100%;margin-bottom:8px;" onclick="exportMyData()">Download my data (JSON)</button>
+                    <input type="password" id="deletePassword" placeholder="Password to delete account" style="width:100%;padding:10px;border:2px solid #f0f0f0;border-radius:8px;margin-bottom:8px;">
+                    <button class="btn-danger" style="width:100%;" onclick="deleteMyAccount()">Delete my account</button>
                 </div>
 
                 <!-- Blocked Users Section -->
                 <div class="settings-section">
                     <h4>🚫 Blocked Users</h4>
                     <div id="blockedUsersList">
-                        <div class="empty-blocked-list">💚 You haven't blocked anyone</div>
+                        <div class="empty-blocked-list">You haven't blocked anyone</div>
                     </div>
-                </div>
-
-                <div style="margin-top: 20px;">
-                    <button class="btn-danger" onclick="resetSettings()" style="width: 100%;">Reset Settings to Default</button>
                 </div>
             </div>
         </div>
@@ -1984,7 +2014,7 @@
                 document.getElementById('receivedCards').innerHTML = cards.length ? 
                     cards.map(card => `
                         <div style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 15px; cursor: pointer;" 
-                             onclick="viewCard(${card.id})">
+                             onclick="viewCard('${card.id}')">
                             <div style="font-size: 1.5em; margin-bottom: 10px;">💌 From ${card.from}</div>
                             <div>${card.viewed ? '✅ Viewed' : '🆕 New Card'}</div>
                         </div>
@@ -2006,6 +2036,89 @@
                 }
             } catch (error) {
                 console.error('Error viewing card:', error);
+            }
+        }
+
+        async function loadConversations() {
+            try {
+                const res = await fetch('/api/conversations');
+                const list = await res.json();
+                const el = document.getElementById('conversationsList');
+                if (!Array.isArray(list) || !list.length) {
+                    el.innerHTML = '<p style="color:#94a3b8;">No conversations yet. Accept a connection, then message them.</p>';
+                    return;
+                }
+                el.innerHTML = list.map(c => `
+                    <button onclick="openConversation('${c.username}')" style="width:100%;text-align:left;padding:12px;margin-bottom:8px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;">
+                        <div style="display:flex;justify-content:space-between;gap:8px;">
+                            <strong>@${c.username}</strong>
+                            ${c.unread ? `<span style="background:#0f766e;color:#fff;border-radius:999px;padding:2px 8px;font-size:0.8em;">${c.unread}</span>` : ''}
+                        </div>
+                        <div style="color:#64748b;font-size:0.9em;margin-top:4px;">${(c.last_message || '').replace(/</g,'&lt;')}</div>
+                    </button>
+                `).join('');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function openConversation(username) {
+            document.getElementById('chatUser').value = username;
+            loadChat();
+            startChatAutoRefresh();
+        }
+
+        async function changePassword() {
+            const current_password = document.getElementById('currentPassword').value;
+            const new_password = document.getElementById('newPassword').value;
+            try {
+                const res = await fetch('/api/user/change-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ current_password, new_password })
+                });
+                const data = await res.json();
+                showMessage(data.message, res.ok ? 'success' : 'error');
+                if (res.ok) {
+                    document.getElementById('currentPassword').value = '';
+                    document.getElementById('newPassword').value = '';
+                }
+            } catch (e) {
+                showMessage('Could not change password', 'error');
+            }
+        }
+
+        async function exportMyData() {
+            try {
+                const res = await fetch('/api/user/export');
+                const data = await res.json();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'textlink-export.json';
+                a.click();
+            } catch (e) {
+                showMessage('Export failed', 'error');
+            }
+        }
+
+        async function deleteMyAccount() {
+            const password = document.getElementById('deletePassword').value;
+            if (!password || !confirm('Permanently delete your account?')) return;
+            try {
+                const res = await fetch('/api/user/delete-account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ password })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    window.location.href = '/';
+                } else {
+                    showMessage(data.message, 'error');
+                }
+            } catch (e) {
+                showMessage('Delete failed', 'error');
             }
         }
 
@@ -2037,17 +2150,19 @@
                     return;
                 }
                 
+                const esc = (s) => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
                 messagesList.innerHTML = messages.map(msg => {
                     if (msg.type === 'image') {
+                        const src = esc(msg.content);
                         return `
                             <div class="message-item ${msg.from === currentUser.username ? 'sent' : 'received'}" style="max-width: 80%;">
-                                <img src="${msg.content}" style="max-width: 100%; border-radius: 8px; max-height: 300px;">
+                                <img src="${src}" style="max-width: 100%; border-radius: 8px; max-height: 300px;">
                             </div>
                         `;
                     }
                     return `
-                        <div class="message-item ${msg.from === currentUser.username ? 'sent' : 'received'}">
-                            ${msg.content}
+                        <div class="message-item ${msg.from === currentUser.username ? 'sent' : 'received'}" style="white-space:pre-wrap;">
+                            ${esc(msg.content)}
                         </div>
                     `;
                 }).join('');
@@ -2172,6 +2287,7 @@
                 stopChatAutoRefresh();
             }
             else if (tabName === 'messages') {
+                loadConversations();
                 startChatAutoRefresh();
             }
             else if (tabName === 'settings') {
@@ -2275,11 +2391,11 @@
                 const response = await fetch('/api/user/notification-settings');
                 const settings = await response.json();
 
-                document.getElementById('emailLikes').checked = settings.email_likes !== false;
-                document.getElementById('emailFollows').checked = settings.email_follows !== false;
-                document.getElementById('emailRequests').checked = settings.email_requests !== false;
-                document.getElementById('emailMessages').checked = settings.email_messages !== false;
-                document.getElementById('emailCards').checked = settings.email_cards !== false;
+                document.getElementById('emailLikes').checked = !!settings.email_on_like;
+                document.getElementById('emailFollows').checked = !!settings.email_on_follow;
+                document.getElementById('emailRequests').checked = settings.email_on_request !== false;
+                document.getElementById('emailMessages').checked = settings.email_on_message !== false;
+                document.getElementById('emailGifts').checked = settings.email_on_gift !== false;
             } catch (error) {
                 console.error('Error loading notification settings:', error);
             }
@@ -2287,11 +2403,11 @@
 
         async function updateNotificationSettings() {
             const settings = {
-                email_likes: document.getElementById('emailLikes').checked,
-                email_follows: document.getElementById('emailFollows').checked,
-                email_requests: document.getElementById('emailRequests').checked,
-                email_messages: document.getElementById('emailMessages').checked,
-                email_cards: document.getElementById('emailCards').checked
+                email_on_like: document.getElementById('emailLikes').checked,
+                email_on_follow: document.getElementById('emailFollows').checked,
+                email_on_request: document.getElementById('emailRequests').checked,
+                email_on_message: document.getElementById('emailMessages').checked,
+                email_on_gift: document.getElementById('emailGifts').checked
             };
 
             try {
