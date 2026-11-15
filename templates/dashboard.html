@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valentine's Dashboard 💕</title>
+    <title>TextLink Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
+        :root {
+            --accent: #0f766e;
+            --accent-hot: #be123c;
+            --ink: #0f172a;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -13,8 +21,11 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #ff1744 0%, #f50057 50%, #c51162 100%);
+            font-family: 'DM Sans', sans-serif;
+            background:
+                radial-gradient(ellipse 70% 50% at 0% 0%, rgba(20, 184, 166, 0.28), transparent 55%),
+                radial-gradient(ellipse 60% 40% at 100% 0%, rgba(190, 18, 60, 0.22), transparent 50%),
+                linear-gradient(165deg, #0f172a 0%, #1e3a5f 40%, #134e4a 100%);
             min-height: 100vh;
             padding-bottom: 50px;
         }
@@ -383,7 +394,7 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);
+            background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%);
             color: white;
         }
 
@@ -747,7 +758,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>💕 Valentine's Love</h1>
+        <h1 style="font-family:'Fraunces',serif;">💬 TextLink</h1>
         <div style="display: flex; gap: 15px; align-items: center;">
             <span id="notificationBadge" style="background: #ff1744; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9em; font-weight: 600; display: none;"></span>
             <a href="/admin" id="adminLink" style="background: rgba(255,255,255,0.3); color: white; padding: 8px 15px; border-radius: 25px; text-decoration: none; font-weight: 600; display: none; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.5)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">🔐 Admin Dashboard</a>
@@ -761,15 +772,15 @@
 
         <!-- Tab Navigation -->
         <div class="nav-tabs">
-            <button class="nav-tab active" onclick="switchTab('send')">💌 Send Request</button>
+            <button class="nav-tab active" onclick="switchTab('send')">🔗 Connect</button>
             <button class="nav-tab" onclick="switchTab('received')">📬 Received</button>
             <button class="nav-tab" onclick="switchTab('sent')">📤 Sent</button>
             <button class="nav-tab" onclick="switchTab('discover')">🌟 Discover</button>
             <button class="nav-tab" onclick="switchTab('follow')">👥 Follow</button>
-            <button class="nav-tab" onclick="switchTab('likes')">💕 Likes</button>
+            <button class="nav-tab" onclick="switchTab('likes')">❤️ Likes</button>
             <button class="nav-tab" onclick="switchTab('notifications')">🔔 Notifications</button>
             <button class="nav-tab" onclick="switchTab('analytics')">📊 Analytics</button>
-            <button class="nav-tab" onclick="switchTab('gifts')">🎁 Gift Ideas</button>
+            <button class="nav-tab" onclick="switchTab('gifts')">🎁 Buy Gifts</button>
             <button class="nav-tab" onclick="switchTab('cards')">🎨 Cards</button>
             <button class="nav-tab" onclick="switchTab('messages')">💬 Messages</button>
             <button class="nav-tab" onclick="switchTab('settings')">⚙️ Settings</button>
@@ -789,13 +800,13 @@
         <!-- Send Request Tab -->
         <div id="send" class="tab-content active">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">🔍 Find Someone Special</h3>
+                <h3 style="color: #0f766e; margin-bottom: 20px;">🔍 Find someone to connect with</h3>
                 <input type="text" id="searchInput" placeholder="Search by username..." onkeyup="searchUsers()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
                 <div class="grid-2" id="searchResults"></div>
                 <div id="messageForm" style="display: none;">
-                    <h3 style="color: #ff1744; margin: 20px 0 15px 0;">💌 Write Your Message</h3>
-                    <textarea id="messageText" placeholder="Write a romantic message..." style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit; margin-bottom: 15px;"></textarea>
-                    <button class="btn-primary" onclick="sendRequest()" style="width: 100%;">Send Request</button>
+                    <h3 style="color: #0f766e; margin: 20px 0 15px 0;">✍️ Write your connection message</h3>
+                    <textarea id="messageText" placeholder="Say hello and why you'd like to connect..." style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit; margin-bottom: 15px;"></textarea>
+                    <button class="btn-primary" onclick="sendRequest()" style="width: 100%;">Send Connection Request</button>
                 </div>
             </div>
         </div>
@@ -892,15 +903,43 @@
 
         <div id="gifts" class="tab-content">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">🎁 Valentine's Gift Ideas</h3>
+                <h3 style="color: #0f766e; margin-bottom: 8px;">🎁 Buy &amp; send a gift</h3>
+                <p style="color:#64748b; margin-bottom: 18px;">Pay securely with card via Stripe. The recipient gets the gift in chat and notifications.</p>
+                <div id="giftPaymentBanner" style="display:none; padding:12px 14px; border-radius:10px; margin-bottom:16px; font-weight:600;"></div>
                 <div class="grid-2" id="giftsList"></div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3 style="color: #0f766e; margin-bottom: 16px;">📦 Gifts you received</h3>
+                <div id="receivedGiftsList"><p style="color:#999;">Loading…</p></div>
+            </div>
+            <div class="card" style="margin-top: 20px;">
+                <h3 style="color: #0f766e; margin-bottom: 16px;">🚀 Gifts you sent</h3>
+                <div id="sentGiftsList"><p style="color:#999;">Loading…</p></div>
+            </div>
+        </div>
+
+        <!-- Buy Gift Modal -->
+        <div id="giftModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:2000; align-items:center; justify-content:center; padding:20px;">
+            <div style="background:white; border-radius:16px; max-width:420px; width:100%; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,0.25);">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                    <h3 style="color:#0f172a; font-family:'Fraunces',serif;" id="giftModalTitle">Send gift</h3>
+                    <button onclick="closeGiftModal()" style="border:none; background:#f1f5f9; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.1em;">✕</button>
+                </div>
+                <div id="giftModalEmoji" style="font-size:3em; text-align:center; margin:8px 0;"></div>
+                <p id="giftModalPrice" style="text-align:center; color:#0f766e; font-weight:700; font-size:1.2em; margin-bottom:16px;"></p>
+                <label style="display:block; font-weight:600; margin-bottom:6px; color:#334155;">Send to (username)</label>
+                <input type="text" id="giftRecipient" placeholder="username" style="width:100%; padding:12px; border:2px solid #e2e8f0; border-radius:10px; margin-bottom:12px; font-size:1em;">
+                <label style="display:block; font-weight:600; margin-bottom:6px; color:#334155;">Optional message</label>
+                <textarea id="giftNote" placeholder="Add a short note…" style="width:100%; min-height:80px; padding:12px; border:2px solid #e2e8f0; border-radius:10px; margin-bottom:16px; font-family:inherit;"></textarea>
+                <button id="giftPayBtn" onclick="checkoutGift()" class="btn-primary" style="width:100%;">Pay &amp; Send Gift</button>
+                <p style="margin-top:12px; font-size:0.85em; color:#64748b; text-align:center;">You'll be redirected to Stripe Checkout for secure card payment.</p>
             </div>
         </div>
 
         <!-- Custom Cards Tab -->
         <div id="cards" class="tab-content">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">🎨 Create Love Card</h3>
+                <h3 style="color: #0f766e; margin-bottom: 20px;">🎨 Create a card</h3>
                 <div style="display: grid; gap: 20px;">
                     <div>
                         <label style="display: block; color: #333; font-weight: 600; margin-bottom: 10px;">👤 Send To:</label>
@@ -1454,7 +1493,7 @@
 
             socket.on('user_notification', (data) => {
                 showMessage(data.message, 'success');
-                sendPushNotification('💕 Valentine\'s Love', { body: data.message });
+                sendPushNotification('TextLink', { body: data.message });
                 loadNotifications();
                 createHeartAnimation();
             });
@@ -1546,7 +1585,7 @@
 
         function shareOnFacebook() {
             const shareUrl = `${window.location.origin}/dashboard`;
-            const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=Join%20me%20on%20Valentine's%20Love!%20%F0%9F%92%95`;
+            const fbUrl = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}&quote=Join%20me%20on%20TextLink!`;
             window.open(fbUrl, '_blank', 'width=600,height=400');
         }
 
@@ -1758,23 +1797,122 @@
             }
         }
 
+        let selectedGift = null;
+        let giftsById = {};
+
+        function openGiftModalById(id) {
+            const gift = giftsById[id];
+            if (gift) openGiftModal(gift);
+        }
+
+        function openGiftModal(gift) {
+            selectedGift = gift;
+            const modal = document.getElementById('giftModal');
+            document.getElementById('giftModalTitle').textContent = gift.name;
+            document.getElementById('giftModalEmoji').textContent = gift.emoji;
+            document.getElementById('giftModalPrice').textContent = gift.price;
+            document.getElementById('giftRecipient').value = '';
+            document.getElementById('giftNote').value = '';
+            document.getElementById('giftPayBtn').disabled = false;
+            document.getElementById('giftPayBtn').textContent = 'Pay & Send Gift';
+            modal.style.display = 'flex';
+        }
+
+        function closeGiftModal() {
+            document.getElementById('giftModal').style.display = 'none';
+            selectedGift = null;
+        }
+
+        async function checkoutGift() {
+            if (!selectedGift) return;
+            const to = document.getElementById('giftRecipient').value.trim();
+            const message = document.getElementById('giftNote').value.trim();
+            if (!to) {
+                showMessage('Enter the recipient username', 'error');
+                return;
+            }
+            const btn = document.getElementById('giftPayBtn');
+            btn.disabled = true;
+            btn.textContent = 'Starting checkout…';
+            try {
+                const response = await fetch('/api/gifts/checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gift_id: selectedGift.id, to, message })
+                });
+                const data = await response.json();
+                if (!response.ok) {
+                    showMessage(data.message || 'Checkout failed', 'error');
+                    btn.disabled = false;
+                    btn.textContent = 'Pay & Send Gift';
+                    return;
+                }
+                if (data.checkout_url) {
+                    window.location.href = data.checkout_url;
+                    return;
+                }
+                // Demo mode (no Stripe keys) — gift already delivered
+                showMessage(data.message || 'Gift sent!', 'success');
+                closeGiftModal();
+                loadGifts();
+                loadGiftHistory();
+            } catch (error) {
+                showMessage('Payment error. Please try again.', 'error');
+                btn.disabled = false;
+                btn.textContent = 'Pay & Send Gift';
+            }
+        }
+
         async function loadGifts() {
             try {
                 const response = await fetch('/api/gifts');
                 const gifts = await response.json();
 
+                giftsById = {};
+                gifts.forEach(g => { giftsById[g.id] = g; });
                 document.getElementById('giftsList').innerHTML = gifts.map(gift => `
                     <div class="gift-card">
                         <div class="gift-emoji">${gift.emoji}</div>
                         <h3>${gift.name}</h3>
                         <p>${gift.description}</p>
-                        <p style="color: #ff1744; font-weight: 600; margin-top: 10px;">${gift.price}</p>
+                        <p style="color: #0f766e; font-weight: 700; margin-top: 10px; font-size:1.1em;">${gift.price}</p>
+                        <button class="btn-primary" style="width:100%; margin-top:14px;" onclick="openGiftModalById(${gift.id})">Buy &amp; Send</button>
                     </div>
                 `).join('');
+                loadGiftHistory();
             } catch (error) {
                 console.error('Error loading gifts:', error);
             }
         }
+
+        async function loadGiftHistory() {
+            try {
+                const [recvRes, sentRes] = await Promise.all([
+                    fetch('/api/gifts/received'),
+                    fetch('/api/gifts/sent')
+                ]);
+                const received = await recvRes.json();
+                const sent = await sentRes.json();
+                const fmt = (list, empty, dir) => {
+                    if (!list.length) return `<p style="color:#94a3b8;">${empty}</p>`;
+                    return list.slice().reverse().map(g => `
+                        <div style="display:flex; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid #f1f5f9;">
+                            <div style="font-size:1.8em;">${g.gift_emoji}</div>
+                            <div style="flex:1;">
+                                <div style="font-weight:600; color:#0f172a;">${g.gift_name}</div>
+                                <div style="color:#64748b; font-size:0.9em;">${dir === 'in' ? 'From' : 'To'} <strong>@${dir === 'in' ? g.from : g.to}</strong>${g.message ? ' — ' + g.message : ''}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                };
+                document.getElementById('receivedGiftsList').innerHTML = fmt(received, 'No gifts received yet.', 'in');
+                document.getElementById('sentGiftsList').innerHTML = fmt(sent, 'No gifts sent yet.', 'out');
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+
 
         async function loadCardTemplates() {
             try {
@@ -2074,13 +2212,12 @@
             }
 
             try {
-                const response = await fetch('/api/report-user', {
+                const response = await fetch(`/api/report/${encodeURIComponent(username)}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        reported_username: username,
                         reason: reason,
-                        details: details
+                        message: details
                     })
                 });
 
@@ -2268,11 +2405,33 @@
             setTimeout(() => heart.remove(), 2000);
         }
 
+        // Gift payment return banner (Stripe success/cancel)
+        (function handleGiftReturn() {
+            const params = new URLSearchParams(window.location.search);
+            const giftStatus = params.get('gift');
+            if (!giftStatus) return;
+            const banner = document.getElementById('giftPaymentBanner');
+            if (!banner) return;
+            if (giftStatus === 'success') {
+                banner.style.display = 'block';
+                banner.style.background = '#dcfce7';
+                banner.style.color = '#166534';
+                banner.textContent = 'Payment successful — your gift was delivered!';
+                switchTab('gifts');
+            } else if (giftStatus === 'cancelled') {
+                banner.style.display = 'block';
+                banner.style.background = '#fef3c7';
+                banner.style.color = '#92400e';
+                banner.textContent = 'Payment cancelled. No charge was made.';
+                switchTab('gifts');
+            }
+            window.history.replaceState({}, '', '/dashboard');
+        })();
+
         // Initialize
         loadProfile();
         loadReceivedRequests();
         loadNotifications();
-        loadReceivedMessages();
     </script>
 </body>
 </html>

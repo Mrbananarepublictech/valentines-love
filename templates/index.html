@@ -3,8 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valentine's Love Request 💕</title>
+    <title>TextLink — Connect & Text</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --ink: #0f172a;
+            --accent: #0f766e;
+            --accent-2: #be123c;
+            --muted: #64748b;
+            --card: rgba(255, 255, 255, 0.94);
+        }
         * {
             margin: 0;
             padding: 0;
@@ -12,8 +22,11 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #ff1744 0%, #f50057 50%, #c51162 100%);
+            font-family: 'DM Sans', sans-serif;
+            background:
+                radial-gradient(ellipse 80% 60% at 10% 20%, rgba(20, 184, 166, 0.35), transparent 55%),
+                radial-gradient(ellipse 70% 50% at 90% 10%, rgba(190, 18, 60, 0.28), transparent 50%),
+                linear-gradient(160deg, #0f172a 0%, #1e3a5f 45%, #0f766e 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -53,16 +66,19 @@
 
         h1 {
             text-align: center;
-            color: #ff1744;
+            color: var(--ink);
             margin-bottom: 10px;
-            font-size: 2em;
+            font-size: 2.1em;
+            font-family: 'Fraunces', serif;
+            letter-spacing: -0.02em;
         }
 
         .subtitle {
             text-align: center;
-            color: #999;
+            color: var(--muted);
             margin-bottom: 30px;
-            font-size: 0.9em;
+            font-size: 0.95em;
+            line-height: 1.45;
         }
 
         .form-group {
@@ -88,8 +104,8 @@
 
         input:focus {
             outline: none;
-            border-color: #ff1744;
-            box-shadow: 0 0 10px rgba(255, 23, 68, 0.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.2);
         }
 
         .button-group {
@@ -112,27 +128,27 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);
+            background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%);
             color: white;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(255, 23, 68, 0.4);
+            box-shadow: 0 8px 24px rgba(15, 118, 110, 0.35);
         }
 
         .btn-secondary {
-            background: #f0f0f0;
-            color: #ff1744;
-            border: 2px solid #ff1744;
+            background: #f1f5f9;
+            color: #0f766e;
+            border: 2px solid #0f766e;
         }
 
         .btn-secondary:hover {
-            background: #ffe0e0;
+            background: #ccfbf1;
         }
 
         .btn-secondary.active {
-            background: #ff1744;
+            background: #0f766e;
             color: white;
         }
 
@@ -191,7 +207,7 @@
         .loading {
             display: none;
             text-align: center;
-            color: #ff1744;
+            color: #0f766e;
         }
 
         .spinner {
@@ -199,7 +215,7 @@
             width: 20px;
             height: 20px;
             border: 3px solid #f0f0f0;
-            border-top: 3px solid #ff1744;
+            border-top: 3px solid #0f766e;
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -246,9 +262,9 @@
 <body>
     <div class="container">
         <div class="card">
-            <div class="logo">💕</div>
-            <h1>Valentine's Love</h1>
-            <p class="subtitle">Ask someone to be your Valentine!</p>
+            <div class="logo">💬</div>
+            <h1>TextLink</h1>
+            <p class="subtitle">Message, connect, and send real gifts — built for everyday texting.</p>
 
             <div class="message" id="message"></div>
 
@@ -412,7 +428,7 @@
                         <h2 style="color: #25D366; margin-bottom: 16px;">Join Our WhatsApp Channel</h2>
                         <p style="margin-bottom: 20px; color: #333;">Stay updated and connect with our community!<br><b>Click below to join:</b></p>
                         <a href="https://whatsapp.com/channel/0029VbCbjntKQuJDTeE1rT0h" target="_blank" style="display: inline-block; background: #25D366; color: white; font-weight: bold; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 1.1em; margin-bottom: 16px;">Join WhatsApp Channel</a><br>
-                        <button onclick="document.getElementById('whatsappModal').remove(); window.location.href='/dashboard';" style="margin-top: 10px; padding: 8px 20px; border: none; border-radius: 8px; background: #ff1744; color: white; font-weight: 600; cursor: pointer;">Continue to Dashboard</button>
+                        <button onclick="document.getElementById('whatsappModal').remove(); window.location.href='/dashboard';" style="margin-top: 10px; padding: 8px 20px; border: none; border-radius: 8px; background: #0f766e; color: white; font-weight: 600; cursor: pointer;">Continue to Dashboard</button>
                     </div>
                 `;
                 document.body.appendChild(modal);

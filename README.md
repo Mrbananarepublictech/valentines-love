@@ -1,122 +1,88 @@
-# Valentine's Love Request Website 💕
+# TextLink — Connect, Text & Send Gifts
 
-A complete web application where users can create accounts, send Valentine requests, chat, share gifts, and create custom love cards!
+A production-ready messaging platform where people create accounts, send connection requests, chat in real time, and buy digital gifts with real money via Stripe.
 
-## ✨ Features
+## Features
 
-### 👤 Profile Management
-- **Profile Pictures** - Upload and display profile pictures
-- **Bio/About Me** - Add a personal bio visible to others
-- **Profile View** - See others' profiles with pictures and bios
+- Profiles (photo, bio, interests)
+- Connection requests (send / accept / decline)
+- Real-time chat (Socket.IO) + image sharing
+- **Buy & send gifts** with Stripe Checkout (real card payments)
+- Custom cards, likes, follows, block/report
+- Notifications, analytics, admin dashboard
+- Email notifications (optional SMTP)
 
-### 💌 Valentine Requests
-- **Search Users** - Find users by username
-- **Send Requests** - Send personalized Valentine requests
-- **Track Status** - See pending/accepted/rejected requests
-- **Respond** - Accept/reject requests with your own message
+## Quick start (local)
 
-### 💬 Direct Messaging
-- **Chat System** - Real-time messaging between users
-- **Conversation History** - View past conversations
-- **Easy Interface** - Simple chat with timestamps
-
-### 🎁 Gift Recommendations
-- **8 Pre-made Gift Ideas** - Flowers, jewelry, experiences, and more
-- **Budget Options** - Cheap to luxury gifts
-- **Easy Browsing** - Beautiful grid view
-
-### 🎨 Custom Love Cards
-- **4 Card Templates** - Different romantic designs
-- **Custom Messages** - Write your own message
-- **Card Delivery** - Send cards to other users
-- **View Cards** - Receive cards in dashboard
-
-### 📧 Email Notifications (Optional)
-- Valentine request emails
-- Response notification emails
-- Fully configurable via .env
-
-## 🚀 Quick Start
-
-### 1. Install Dependencies
-`bash
+```bash
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-`
-
-### 2. Configure Email (Optional)
-Copy .env.example to .env and add email credentials for Gmail/Outlook.
-
-### 3. Run the App
-`bash
+cp .env.example .env
 python app.py
-`
+```
 
-Visit: http://localhost:5000
+Open http://localhost:5000
 
-## 📋 Project Structure
+Without Stripe keys, gift checkout runs in **demo mode** (no charge; gift is delivered instantly) so you can test the flow.
 
-- **app.py** - Flask backend with all features
-- **requirements.txt** - Dependencies (Flask, Flask-Mail, Pillow)
-- **.env** - Email configuration
-- **templates/** - HTML files
-  - index.html - Login/Register
-  - dashboard.html - Main application
-- **data/** - JSON storage
-  - users.json
-  - requests.json
-  - messages.json
-  - cards.json
+## Stripe (real money gifts)
 
-## 📧 Email Setup (Optional)
+1. Create a [Stripe](https://dashboard.stripe.com) account.
+2. Copy **Secret key** and **Publishable key** into `.env` / your host env:
+   - `STRIPE_SECRET_KEY=sk_test_…`
+   - `STRIPE_PUBLISHABLE_KEY=pk_test_…`
+3. Set `APP_URL` to your public URL (required for Checkout redirects), e.g. `https://your-app.up.railway.app`
+4. Add a webhook endpoint: `https://your-domain/api/stripe/webhook`  
+   Event: `checkout.session.completed`  
+   Set `STRIPE_WEBHOOK_SECRET=whsec_…`
+5. Use test cards (`4242 4242 4242 4242`) until you switch to live keys (`sk_live_…` / `pk_live_…`).
 
-### For Gmail:
-1. Enable 2-Factor Authentication
-2. Go to myaccount.google.com/apppasswords
-3. Generate app password
-4. Add to .env:
-   - MAIL_USERNAME=your_email@gmail.com
-   - MAIL_PASSWORD=16_char_password
+### Gift purchase flow
 
-### For Other Providers:
-- Outlook: smtp.office365.com:587
-- Yahoo: smtp.mail.yahoo.com:587
-- Custom: Use your provider's SMTP settings
+1. User opens **Buy Gifts**, picks a gift, enters recipient + optional note.
+2. App creates a Stripe Checkout Session (`POST /api/gifts/checkout`).
+3. User pays on Stripe’s hosted page.
+4. Stripe webhook (and/or `/gifts/success`) marks the order paid and delivers the gift to chat + notifications.
 
-### Without Email:
-- App works perfectly without email setup
-- Notifications log to console instead
+## Production env vars
 
-## 💻 How to Use
+| Variable | Required | Notes |
+|----------|----------|--------|
+| `SECRET_KEY` | Yes | Long random string |
+| `FLASK_ENV` | Yes | `production` |
+| `APP_URL` | Yes (with Stripe) | Public https URL, no trailing slash |
+| `STRIPE_SECRET_KEY` | For live gifts | `sk_live_…` or `sk_test_…` |
+| `STRIPE_PUBLISHABLE_KEY` | For live gifts | Matching publishable key |
+| `STRIPE_WEBHOOK_SECRET` | Recommended | Webhook signing secret |
+| `STRIPE_CURRENCY` | No | Default `usd` |
+| `MAIL_*` | No | Optional email |
 
-1. **Create Accounts** - Both users register
-2. **Add Profiles** - Upload pictures, add bios
-3. **Search & Send** - Find each other, send valentine request
-4. **Accept/Reject** - Receive and respond
-5. **Chat & Share** - Message, send cards, share gifts
+## Deploy
 
-## 🔐 Security
+`Procfile` uses gunicorn + eventlet:
+
+```
+web: gunicorn --worker-class eventlet -w 1 app:app
+```
+
+Works on Railway, Render, Heroku, and similar platforms. Set the env vars above, deploy, then configure the Stripe webhook to your live URL.
+
+## Health check
+
+`GET /api/health` → `{ status, app, stripe, env }`
+
+## Project layout
+
+- `app.py` — Flask + Socket.IO + Stripe
+- `templates/` — login, dashboard, admin
+- `data/` — JSON storage (users, messages, orders, gifts, …)
+- `.env.example` — env template
+
+## Security notes
 
 - Passwords hashed with Werkzeug
-- Secure session management
-- Profile pictures stored as base64
-- Environment variables for secrets
-
-## 🌟 Features Included
-
-✅ Profile pictures
-✅ Chat/messaging
-✅ Gift recommendations
-✅ Email notifications
-✅ Custom love cards
-✅ User search
-✅ Request tracking
-✅ Response messages
-
-## 📞 Support
-
-- Check data/users.json to verify accounts
-- Usernames are case-sensitive
-- Profile pictures must be under 5MB
-- For Gmail, use app password not regular password
-
-Made with ❤️ for Valentine's Day 2026
+- Secure cookies when `FLASK_ENV=production`
+- ProxyFix for reverse proxies
+- Stripe webhook signature verification when `STRIPE_WEBHOOK_SECRET` is set
+- Atomic JSON writes with file locks

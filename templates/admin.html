@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - Valentine's Love</title>
+    <title>Admin Dashboard - TextLink</title>
     <style>
         * {
             margin: 0;
@@ -205,8 +205,8 @@
         <div class="header">
             <div style="display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h1>💕 Admin Dashboard</h1>
-                    <p>Manage Valentine's Love application</p>
+                    <h1>💬 Admin Dashboard</h1>
+                    <p>Manage TextLink</p>
                 </div>
                 <a href="/logout" class="logout-btn">Logout</a>
             </div>
@@ -257,8 +257,8 @@
                         <div class="number">${stats.total_users}</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Valentine Requests</h3>
-                        <div class="number">${stats.total_valentine_requests}</div>
+                        <h3>Connection Requests</h3>
+                        <div class="number">${stats.total_connection_requests || stats.total_valentine_requests}</div>
                     </div>
                     <div class="stat-card">
                         <h3>Messages</h3>
@@ -269,20 +269,24 @@
                         <div class="number">${stats.total_cards}</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Total Follows</h3>
-                        <div class="number">${stats.total_follows}</div>
+                        <h3>Gifts Sent</h3>
+                        <div class="number">${stats.total_gifts_sent || 0}</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Total Likes</h3>
-                        <div class="number">${stats.total_likes}</div>
+                        <h3>Gift Revenue</h3>
+                        <div class="number" style="font-size:1.4em;">${stats.revenue || '$0.00'}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Follows</h3>
+                        <div class="number">${stats.total_follows}</div>
                     </div>
                     <div class="stat-card">
                         <h3>Pending Requests</h3>
                         <div class="number" style="color: #ffc400;">${stats.pending_requests}</div>
                     </div>
                     <div class="stat-card">
-                        <h3>Accepted Requests</h3>
-                        <div class="number" style="color: #4caf50;">${stats.accepted_requests}</div>
+                        <h3>Stripe</h3>
+                        <div class="number" style="font-size:1.1em; color:${stats.stripe_enabled ? '#4caf50' : '#ff1744'};">${stats.stripe_enabled ? 'Live' : 'Off'}</div>
                     </div>
                 `;
                 
