@@ -6,779 +6,404 @@
     <title>TextLink Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <style>
         :root {
-            --accent: #0f766e;
-            --accent-hot: #be123c;
-            --ink: #0f172a;
+            --ink: #0b1220;
+            --muted: #64748b;
+            --accent: #0891b2;
+            --accent-strong: #0e7490;
+            --accent-soft: #ecfeff;
+            --warm: #f97316;
+            --surface: #ffffff;
+            --surface-2: #f8fafc;
+            --line: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warn: #f59e0b;
+            --radius: 20px;
+            --radius-sm: 12px;
+            --shadow: 0 18px 50px rgba(2, 12, 27, 0.18);
+            --font-display: 'Sora', sans-serif;
+            --font-body: 'Plus Jakarta Sans', sans-serif;
         }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
-            font-family: 'DM Sans', sans-serif;
-            background:
-                radial-gradient(ellipse 70% 50% at 0% 0%, rgba(20, 184, 166, 0.28), transparent 55%),
-                radial-gradient(ellipse 60% 40% at 100% 0%, rgba(190, 18, 60, 0.22), transparent 50%),
-                linear-gradient(165deg, #0f172a 0%, #1e3a5f 40%, #134e4a 100%);
+            font-family: var(--font-body);
+            color: var(--ink);
             min-height: 100vh;
-            padding-bottom: 50px;
+            padding-bottom: 56px;
+            background:
+                radial-gradient(ellipse 70% 50% at 0% 0%, rgba(8,145,178,0.35), transparent 55%),
+                radial-gradient(ellipse 55% 40% at 100% 0%, rgba(249,115,22,0.2), transparent 50%),
+                linear-gradient(165deg, #070b14 0%, #111827 42%, #0b3a48 100%);
         }
-
         .header {
-            background: rgba(0, 0, 0, 0.2);
-            backdrop-filter: blur(10px);
-            padding: 20px;
-            color: white;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky; top: 0; z-index: 100;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 16px 22px;
+            color: #fff;
+            background: rgba(7, 11, 20, 0.72);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
-
         .header h1 {
-            font-size: 1.8em;
+            font-family: var(--font-display);
+            font-size: 1.35rem;
+            font-weight: 700;
+            letter-spacing: -0.03em;
         }
-
         .logout-btn {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid white;
-            padding: 8px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
+            color: #fff;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.88rem;
+            padding: 10px 16px;
+            border-radius: 999px;
+            border: 1px solid rgba(255,255,255,0.25);
+            background: rgba(255,255,255,0.08);
+            transition: .2s ease;
         }
-
         .logout-btn:hover {
-            background: white;
-            color: #ff1744;
+            background: #fff;
+            color: var(--accent-strong);
         }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
+        .container { max-width: 1120px; margin: 0 auto; padding: 22px; }
         .profile-container {
             display: grid;
             grid-template-columns: auto 1fr;
-            gap: 20px;
-            align-items: start;
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            gap: 22px;
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 26px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255,255,255,0.5);
+            animation: rise .55s ease;
         }
-
-        .profile-picture-upload {
-            position: relative;
-            width: 120px;
-            height: 120px;
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(14px); }
+            to { opacity: 1; transform: none; }
         }
-
+        .profile-picture-upload { position: relative; width: 112px; height: 112px; }
         .profile-picture-img {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
+            width: 100%; height: 100%;
+            border-radius: 28px;
             object-fit: cover;
-            border: 3px solid #ff1744;
-            background: #f0f0f0;
+            border: 3px solid var(--accent);
+            background: linear-gradient(145deg, #e2e8f0, #f8fafc);
         }
-
         .picture-upload-label {
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            background: #ff1744;
-            color: white;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 1.2em;
-            transition: all 0.3s;
+            position: absolute; bottom: -4px; right: -4px;
+            width: 36px; height: 36px;
+            display: grid; place-items: center;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #fff; border-radius: 12px; cursor: pointer;
+            box-shadow: 0 8px 18px rgba(8,145,178,0.35);
         }
-
-        .picture-upload-label:hover {
-            transform: scale(1.1);
-        }
-
-        #pictureInput {
-            display: none;
-        }
-
-        .profile-info {
-            flex: 1;
-        }
-
+        #pictureInput { display: none; }
         .profile-info h2 {
-            color: #ff1744;
-            font-size: 1.8em;
-            margin-bottom: 10px;
+            font-family: var(--font-display);
+            font-size: 1.7rem;
+            letter-spacing: -0.03em;
+            color: var(--ink);
+            margin-bottom: 6px;
         }
-
-        .profile-info p {
-            color: #666;
-            margin: 5px 0;
-        }
-
-        .bio-section {
-            margin-top: 15px;
-        }
-
-        .bio-section textarea {
+        .profile-info p { color: var(--muted); margin: 4px 0; font-weight: 500; }
+        .bio-section { margin-top: 14px; }
+        .bio-section textarea, .bio-section input, .bio-section select,
+        input[type="text"], input[type="password"], input[type="email"], textarea, select {
             width: 100%;
-            min-height: 60px;
-            padding: 10px;
-            border: 2px solid #f0f0f0;
-            border-radius: 8px;
+            padding: 12px 14px;
+            border: 1.5px solid var(--line);
+            border-radius: var(--radius-sm);
             font-family: inherit;
-            resize: vertical;
+            font-size: 0.95rem;
+            background: var(--surface-2);
+            transition: .2s ease;
         }
-
-        .bio-section button {
-            margin-top: 10px;
-            padding: 8px 15px;
-            background: #ff1744;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s;
+        .bio-section textarea:focus, input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: var(--accent);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(8,145,178,0.12);
         }
-
-        .bio-section button:hover {
-            background: #f50057;
-        }
-
         .nav-tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
+            display: flex; flex-wrap: wrap; gap: 8px;
+            margin-bottom: 18px; padding: 10px;
+            border-radius: 18px;
             background: rgba(255,255,255,0.08);
-            padding: 12px;
-            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
         }
-
         .nav-tab {
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.3);
-            padding: 12px 25px;
-            border-radius: 25px;
+            background: rgba(255,255,255,0.08);
+            color: rgba(255,255,255,0.88);
+            border: 1px solid rgba(255,255,255,0.12);
+            padding: 10px 14px;
+            border-radius: 999px;
             cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.85em;
-            letter-spacing: 0.5px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.78rem;
+            letter-spacing: 0.02em;
+            text-transform: none;
+            transition: .2s ease;
         }
-
-        .nav-tab:hover {
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
+        .nav-tab:hover { background: rgba(255,255,255,0.16); transform: translateY(-1px); }
         .nav-tab.active {
-            background: white;
-            color: #ff1744;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            background: #fff;
+            color: var(--accent-strong);
+            border-color: transparent;
+            box-shadow: 0 8px 22px rgba(0,0,0,0.18);
         }
-
-        .tab-content {
-            display: none;
-        }
-
-        .tab-content.active {
-            display: block;
-            animation: fadeIn 0.4s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: rise .4s ease; }
         .card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            background: var(--surface);
+            border-radius: var(--radius);
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255,255,255,0.45);
         }
-
+        .card h3 {
+            font-family: var(--font-display) !important;
+            letter-spacing: -0.02em;
+            color: var(--accent-strong) !important;
+        }
         .grid-2 {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 15px;
-            margin-bottom: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 14px;
+            margin-bottom: 16px;
         }
-
-        .gift-card, .result-card {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
+        .gift-card, .result-card, .analytics-card, .card-template {
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 18px;
             text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            transition: .22s ease;
         }
-
         .gift-card:hover, .result-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 7px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(-4px);
+            border-color: rgba(8,145,178,0.35);
+            box-shadow: 0 16px 30px rgba(8,145,178,0.12);
         }
-
-        .gift-emoji, .card-icon {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
+        .gift-emoji, .card-icon { font-size: 2.3rem; margin-bottom: 8px; }
         .gift-card h3, .result-card h4 {
-            color: #ff1744;
-            margin-bottom: 5px;
+            font-family: var(--font-display);
+            font-size: 1.05rem;
+            color: var(--ink) !important;
+            margin-bottom: 6px;
         }
-
-        .gift-card p, .result-card p {
-            color: #666;
-            font-size: 0.9em;
-        }
-
-        .result-card.selected {
-            background: #ffe0e0;
-            border: 2px solid #ff1744;
-        }
-
-        .message-chat {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            height: 400px;
-            display: flex;
-            flex-direction: column;
-            margin-bottom: 20px;
-        }
-
-        .messages-list {
-            flex: 1;
-            overflow-y: auto;
-            margin-bottom: 15px;
-            scroll-behavior: smooth;
-        }
-
-        .message-item {
-            margin: 10px 0;
-            padding: 10px 15px;
-            border-radius: 8px;
-            max-width: 70%;
-            word-wrap: break-word;
-        }
-
-        .message-item.sent {
-            background: #ff1744;
-            color: white;
-            margin-left: auto;
-        }
-
-        .message-item.received {
-            background: #f0f0f0;
-            color: #333;
-        }
-
-        .message-input {
-            display: flex;
-            gap: 10px;
-        }
-
-        .message-input input {
-            flex: 1;
-            padding: 10px 15px;
-            border: 2px solid #f0f0f0;
-            border-radius: 8px;
-            outline: none;
-        }
-
-        .message-input button {
-            padding: 10px 20px;
-            background: #ff1744;
-            color: white;
+        .gift-card p, .result-card p { color: var(--muted); font-size: 0.9rem; }
+        button, .btn-primary, .btn-success, .btn-danger {
+            font-family: inherit;
+            font-weight: 700;
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
+            padding: 11px 16px;
             cursor: pointer;
-            transition: all 0.3s;
+            transition: .2s ease;
+            text-transform: none;
+            letter-spacing: 0;
+            font-size: 0.9rem;
         }
-
-        .message-input button:hover {
-            background: #f50057;
-        }
-
-        .card-template {
-            border: 2px solid #ddd;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 10px 0;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .card-template:hover {
-            border-color: #ff1744;
-            transform: scale(1.02);
-        }
-
-        .card-template.selected {
-            border-color: #ff1744;
-            background: #ffe0e0;
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 40px 20px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-
-        .empty-state h3 {
-            font-size: 1.5em;
-            margin-bottom: 10px;
-        }
-
-        .message {
-            text-align: center;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            animation: slideDown 0.4s ease-in-out;
-        }
-
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .button-group {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-
-        button {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            font-size: 0.85em;
-            letter-spacing: 0.5px;
-        }
-
         .btn-primary {
-            background: linear-gradient(135deg, #0f766e 0%, #134e4a 100%);
-            color: white;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #fff;
+            box-shadow: 0 10px 22px rgba(8,145,178,0.28);
         }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(255, 23, 68, 0.4);
-        }
-
-        .btn-success {
-            background: #4caf50;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background: #45a049;
-        }
-
-        .btn-danger {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #da190b;
-        }
-
+        .btn-primary:hover { transform: translateY(-2px); }
+        .btn-success { background: var(--success); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .button-group { display: flex; gap: 10px; flex-wrap: wrap; }
         .request-card {
-            background: white;
-            border-left: 5px solid #ff1744;
-            border-radius: 10px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            background: #fff;
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--accent);
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 12px;
         }
-
-        .request-card.accepted {
-            border-left-color: #4caf50;
-            background: #f1f8f4;
-        }
-
-        .request-card.rejected {
-            border-left-color: #f44336;
-            background: #fef1f0;
-        }
-
+        .request-card.accepted { border-left-color: var(--success); background: #ecfdf5; }
+        .request-card.rejected { border-left-color: var(--danger); background: #fef2f2; }
         .status-badge {
             display: inline-block;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 800;
             text-transform: uppercase;
-            margin-top: 10px;
+            margin-top: 8px;
         }
-
-        .status-badge.accepted {
-            background: #4caf50;
-            color: white;
+        .status-badge.accepted { background: #d1fae5; color: #047857; }
+        .status-badge.rejected { background: #fee2e2; color: #b91c1c; }
+        .status-badge.pending { background: #ffedd5; color: #c2410c; }
+        .message-chat {
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            overflow: hidden;
+            background: var(--surface-2);
         }
-
-        .status-badge.rejected {
-            background: #f44336;
-            color: white;
+        .messages-list {
+            height: 340px;
+            overflow-y: auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-
-        .status-badge.pending {
-            background: #ff9800;
-            color: white;
+        .message-item {
+            max-width: 75%;
+            padding: 12px 14px;
+            border-radius: 16px;
+            font-weight: 500;
+            line-height: 1.45;
         }
-
+        .message-item.sent {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+            color: #fff;
+            border-bottom-right-radius: 6px;
+        }
+        .message-item.received {
+            align-self: flex-start;
+            background: #fff;
+            border: 1px solid var(--line);
+            color: var(--ink);
+            border-bottom-left-radius: 6px;
+        }
+        .message-input {
+            display: flex; gap: 8px;
+            padding: 12px;
+            background: #fff;
+            border-top: 1px solid var(--line);
+        }
+        .message-input input { flex: 1; }
+        .message-input button {
+            background: var(--accent-strong);
+            color: #fff;
+            border-radius: 12px;
+            padding: 0 18px;
+        }
+        .analytics-card .number {
+            font-family: var(--font-display);
+            font-size: 2rem;
+            color: var(--accent-strong);
+            font-weight: 800;
+        }
+        .settings-section {
+            margin-bottom: 22px;
+            padding-bottom: 18px;
+            border-bottom: 1px solid var(--line);
+        }
+        .settings-section h4 {
+            font-family: var(--font-display);
+            margin-bottom: 12px;
+            color: var(--ink);
+        }
+        .settings-item { margin: 10px 0; }
+        .settings-item label {
+            display: flex; gap: 10px; align-items: center;
+            color: #334155; font-weight: 600; cursor: pointer;
+        }
+        .modal {
+            display: none; position: fixed; inset: 0; z-index: 2000;
+            background: rgba(7,11,20,0.62);
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        .modal.active, .modal.show { display: flex; }
+        .modal-content {
+            background: #fff;
+            border-radius: 20px;
+            padding: 24px;
+            width: min(440px, 100%);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.3);
+        }
+        .modal-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 14px;
+        }
+        .modal-close {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: none; background: #f1f5f9; cursor: pointer; font-size: 1rem;
+        }
+        .social-share { display: flex; gap: 8px; margin-top: 10px; }
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        .theme-option {
+            border-radius: 14px !important;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 700;
+            color: #fff;
+            padding: 14px !important;
+            text-align: center;
+        }
+        .theme-option.selected { outline: 3px solid var(--accent); }
+        .social-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 14px;
+            font-weight: 700;
+            cursor: pointer;
+            color: #fff;
+        }
+        .social-btn.facebook { background: #1877f2; }
+        .social-btn.instagram { background: linear-gradient(135deg, #f97316, #db2777); }
         .heart-animation {
-            position: fixed;
-            pointer-events: none;
-            font-size: 2em;
-            animation: floatUp 2s ease-in forwards;
-            z-index: 100;
+            position: fixed; pointer-events: none; font-size: 1.5rem;
+            animation: floatUp 1.5s ease forwards; z-index: 120;
         }
-
         @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-100px) scale(0.5); }
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-80px); }
         }
-
+        .message {
+            padding: 12px 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .message.success { background: #ecfdf5; color: #047857; }
+        .message.error { background: #fef2f2; color: #b91c1c; }
+        .btn-small {
+            padding: 7px 10px;
+            border-radius: 10px;
+            font-size: 0.78rem;
+            border: 1px solid var(--line);
+            background: #fff;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .profile-action-buttons { display: flex; gap: 8px; margin-top: 10px; justify-content: center; }
         @media (max-width: 768px) {
-            .profile-container {
-                grid-template-columns: 1fr;
-            }
-
-            .grid-2 {
-                grid-template-columns: 1fr;
-            }
-
-            .message-item {
-                max-width: 100%;
-            }
-
+            .profile-container { grid-template-columns: 1fr; }
+            .grid-2 { grid-template-columns: 1fr; }
             .nav-tabs {
                 flex-wrap: nowrap;
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
-                position: sticky;
-                bottom: 8px;
-                z-index: 90;
-                gap: 6px;
+                position: sticky; bottom: 8px; z-index: 90;
             }
-
-            .nav-tab {
-                flex: 0 0 auto;
-                white-space: nowrap;
-                font-size: 0.85em;
-                padding: 8px 12px;
-            }
-
-            .button-group {
-                flex-direction: column;
-            }
-
-            button {
-                width: 100%;
-            }
-
-            .header h1 { font-size: 1.25em; }
-        }
-
-        .social-share {
-            display: flex;
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .social-btn {
-            padding: 8px 15px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 600;
-            text-decoration: none;
-            color: white;
-            font-size: 0.85em;
-            transition: all 0.3s;
-        }
-
-        .social-btn.facebook { background: #1877f2; }
-        .social-btn.facebook:hover { background: #0a66c2; }
-        .social-btn.instagram { background: #e4405f; }
-        .social-btn.instagram:hover { background: #d03860; }
-
-        .analytics-card {
-            background: white;
-            border-radius: 10px;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-
-        .analytics-card h4 {
-            color: #ff1744;
-            margin-bottom: 10px;
-        }
-
-        .analytics-card .number {
-            font-size: 2em;
-            font-weight: bold;
-            color: #333;
-        }
-
-        .theme-selector {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
-            gap: 10px;
-            margin-top: 10px;
-        }
-
-        .theme-option {
-            padding: 10px;
-            border: 2px solid #f0f0f0;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-        }
-
-        .theme-option:hover {
-            border-color: #ff1744;
-            transform: scale(1.05);
-        }
-
-        .theme-option.selected {
-            border-color: #ff1744;
-            background: #ffe0e0;
-        }
-
-        /* Modal Styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 200;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.5);
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        .modal.active {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .modal-content {
-            background-color: white;
-            padding: 30px;
-            border-radius: 15px;
-            width: 90%;
-            max-width: 500px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            animation: slideUp 0.3s ease-in-out;
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(50px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #f0f0f0;
-            padding-bottom: 15px;
-        }
-
-        .modal-header h2 {
-            color: #ff1744;
-            font-size: 1.5em;
-            margin: 0;
-        }
-
-        .modal-close {
-            font-size: 1.5em;
-            cursor: pointer;
-            color: #999;
-            border: none;
-            background: none;
-            transition: all 0.3s;
-        }
-
-        .modal-close:hover {
-            color: #ff1744;
-        }
-
-        .modal-body {
-            margin-bottom: 20px;
-        }
-
-        .modal-footer {
-            display: flex;
-            gap: 10px;
-            justify-content: flex-end;
-        }
-
-        .profile-action-buttons {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-
-        .btn-small {
-            padding: 6px 12px;
-            font-size: 0.75em;
-            border-radius: 6px;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .btn-report {
-            background: #ff9800;
-            color: white;
-        }
-
-        .btn-report:hover {
-            background: #e68900;
-        }
-
-        .btn-block {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-block:hover {
-            background: #da190b;
-        }
-
-        .settings-section {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .settings-section h4 {
-            color: #ff1744;
-            margin-bottom: 15px;
-            font-size: 1.1em;
-        }
-
-        .settings-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 0;
-            border-bottom: 1px solid #e0e0e0;
-        }
-
-        .settings-item:last-child {
-            border-bottom: none;
-        }
-
-        .settings-item label {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #333;
-            font-weight: 500;
-            cursor: pointer;
-        }
-
-        .settings-item input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
-            accent-color: #ff1744;
-        }
-
-        .blocked-user-item {
-            background: white;
-            padding: 12px;
-            border-radius: 8px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-            border-left: 4px solid #f44336;
-        }
-
-        .blocked-user-item strong {
-            color: #333;
-        }
-
-        .btn-unblock {
-            background: #4caf50;
-            color: white;
-            padding: 5px 10px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.8em;
-            transition: all 0.3s;
-        }
-
-        .btn-unblock:hover {
-            background: #45a049;
-        }
-
-        .empty-blocked-list {
-            text-align: center;
-            padding: 20px;
-            color: #999;
+            .nav-tab { flex: 0 0 auto; white-space: nowrap; }
+            .header h1 { font-size: 1.15rem; }
+            .message-item { max-width: 92%; }
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1 style="font-family:'Fraunces',serif;">💬 TextLink</h1>
+        <h1 style="font-family:'Sora',sans-serif;">💬 TextLink</h1>
         <div style="display: flex; gap: 15px; align-items: center;">
-            <span id="notificationBadge" style="background: #ff1744; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9em; font-weight: 600; display: none;"></span>
+            <span id="notificationBadge" style="background: #0891b2; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.9em; font-weight: 600; display: none;"></span>
             <a href="/admin" id="adminLink" style="background: rgba(255,255,255,0.3); color: white; padding: 8px 15px; border-radius: 25px; text-decoration: none; font-weight: 600; display: none; transition: all 0.3s;" onmouseover="this.style.background='rgba(255,255,255,0.5)'" onmouseout="this.style.background='rgba(255,255,255,0.3)'">🔐 Admin Dashboard</a>
             <a href="/logout" class="logout-btn">Logout</a>
         </div>
@@ -809,7 +434,7 @@
                 <!-- Discover Tab -->
                 <div id="discover" class="tab-content">
                     <div class="card">
-                        <h3 style="color: #ff1744; margin-bottom: 20px;">🌟 Discover New People</h3>
+                        <h3 style="color: #0891b2; margin-bottom: 20px;">🌟 Discover New People</h3>
                         <input type="text" id="discoverSearchInput" placeholder="Search by username, bio, or email..." onkeyup="searchDiscoverUsers()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
                         <div class="grid-2" id="discoverResults"></div>
                     </div>
@@ -819,11 +444,11 @@
         <!-- Send Request Tab -->
         <div id="send" class="tab-content active">
             <div class="card">
-                <h3 style="color: #0f766e; margin-bottom: 20px;">🔍 Find someone to connect with</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">🔍 Find someone to connect with</h3>
                 <input type="text" id="searchInput" placeholder="Search by username..." onkeyup="searchUsers()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
                 <div class="grid-2" id="searchResults"></div>
                 <div id="messageForm" style="display: none;">
-                    <h3 style="color: #0f766e; margin: 20px 0 15px 0;">✍️ Write your connection message</h3>
+                    <h3 style="color: #0891b2; margin: 20px 0 15px 0;">✍️ Write your connection message</h3>
                     <textarea id="messageText" placeholder="Say hello and why you'd like to connect..." style="width: 100%; min-height: 100px; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; font-family: inherit; margin-bottom: 15px;"></textarea>
                     <button class="btn-primary" onclick="sendRequest()" style="width: 100%;">Send Connection Request</button>
                 </div>
@@ -843,23 +468,23 @@
         <!-- Follow Tab -->
         <div id="follow" class="tab-content">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">👥 Find Users to Follow</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">👥 Find Users to Follow</h3>
                 <input type="text" id="followSearchInput" placeholder="Search by username..." onkeyup="searchUsersToFollow()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
                 <div class="grid-2" id="followSearchResults"></div>
             </div>
             <div class="card" style="margin-top: 20px;">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">📊 Your Network</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">📊 Your Network</h3>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 20px;">
                     <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px;">
-                        <div style="font-size: 2em; color: #ff1744; font-weight: bold;" id="followerCount">0</div>
+                        <div style="font-size: 2em; color: #0891b2; font-weight: bold;" id="followerCount">0</div>
                         <div style="color: #666; font-size: 0.9em;">Followers</div>
                     </div>
                     <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px;">
-                        <div style="font-size: 2em; color: #ff1744; font-weight: bold;" id="followingCount">0</div>
+                        <div style="font-size: 2em; color: #0891b2; font-weight: bold;" id="followingCount">0</div>
                         <div style="color: #666; font-size: 0.9em;">Following</div>
                     </div>
                     <div style="text-align: center; padding: 15px; background: #f5f5f5; border-radius: 10px;">
-                        <div style="font-size: 2em; color: #ff1744; font-weight: bold;" id="likesCount">0</div>
+                        <div style="font-size: 2em; color: #0891b2; font-weight: bold;" id="likesCount">0</div>
                         <div style="color: #666; font-size: 0.9em;">Likes</div>
                     </div>
                 </div>
@@ -873,11 +498,11 @@
         <!-- Likes Tab -->
         <div id="likes" class="tab-content">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">💕 Users Who Like You</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">💕 Users Who Like You</h3>
                 <div id="likesList"></div>
             </div>
             <div class="card" style="margin-top: 20px;">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">❤️ Find Someone to Like</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">❤️ Find Someone to Like</h3>
                 <input type="text" id="likeSearchInput" placeholder="Search by username..." onkeyup="searchUsersToLike()" style="width: 100%; padding: 12px; border: 2px solid #f0f0f0; border-radius: 8px; margin-bottom: 20px; font-size: 1em;">
                 <div class="grid-2" id="likeSearchResults"></div>
             </div>
@@ -886,7 +511,7 @@
         <!-- Notifications Tab -->
         <div id="notifications" class="tab-content">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">🔔 Your Notifications</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">🔔 Your Notifications</h3>
                 <div id="notificationsList"></div>
             </div>
         </div>
@@ -894,7 +519,7 @@
         <!-- Analytics Tab -->
         <div id="analytics" class="tab-content">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">📊 Your Activity Analytics</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">📊 Your Activity Analytics</h3>
                 <div class="grid-2" id="analyticsList">
                     <div class="analytics-card">
                         <h4>Page Views</h4>
@@ -922,17 +547,17 @@
 
         <div id="gifts" class="tab-content">
             <div class="card">
-                <h3 style="color: #0f766e; margin-bottom: 8px;">🎁 Buy &amp; send a gift</h3>
+                <h3 style="color: #0891b2; margin-bottom: 8px;">🎁 Buy &amp; send a gift</h3>
                 <p style="color:#64748b; margin-bottom: 18px;">Pay securely with card via Stripe. The recipient gets the gift in chat and notifications.</p>
                 <div id="giftPaymentBanner" style="display:none; padding:12px 14px; border-radius:10px; margin-bottom:16px; font-weight:600;"></div>
                 <div class="grid-2" id="giftsList"></div>
             </div>
             <div class="card" style="margin-top: 20px;">
-                <h3 style="color: #0f766e; margin-bottom: 16px;">📦 Gifts you received</h3>
+                <h3 style="color: #0891b2; margin-bottom: 16px;">📦 Gifts you received</h3>
                 <div id="receivedGiftsList"><p style="color:#999;">Loading…</p></div>
             </div>
             <div class="card" style="margin-top: 20px;">
-                <h3 style="color: #0f766e; margin-bottom: 16px;">🚀 Gifts you sent</h3>
+                <h3 style="color: #0891b2; margin-bottom: 16px;">🚀 Gifts you sent</h3>
                 <div id="sentGiftsList"><p style="color:#999;">Loading…</p></div>
             </div>
         </div>
@@ -941,11 +566,11 @@
         <div id="giftModal" style="display:none; position:fixed; inset:0; background:rgba(15,23,42,0.65); z-index:2000; align-items:center; justify-content:center; padding:20px;">
             <div style="background:white; border-radius:16px; max-width:420px; width:100%; padding:28px; box-shadow:0 20px 50px rgba(0,0,0,0.25);">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-                    <h3 style="color:#0f172a; font-family:'Fraunces',serif;" id="giftModalTitle">Send gift</h3>
+                    <h3 style="color:#0f172a; font-family:'Sora',sans-serif;" id="giftModalTitle">Send gift</h3>
                     <button onclick="closeGiftModal()" style="border:none; background:#f1f5f9; width:36px; height:36px; border-radius:50%; cursor:pointer; font-size:1.1em;">✕</button>
                 </div>
                 <div id="giftModalEmoji" style="font-size:3em; text-align:center; margin:8px 0;"></div>
-                <p id="giftModalPrice" style="text-align:center; color:#0f766e; font-weight:700; font-size:1.2em; margin-bottom:16px;"></p>
+                <p id="giftModalPrice" style="text-align:center; color:#0891b2; font-weight:700; font-size:1.2em; margin-bottom:16px;"></p>
                 <label style="display:block; font-weight:600; margin-bottom:6px; color:#334155;">Send to (username)</label>
                 <input type="text" id="giftRecipient" placeholder="username" style="width:100%; padding:12px; border:2px solid #e2e8f0; border-radius:10px; margin-bottom:12px; font-size:1em;">
                 <label style="display:block; font-weight:600; margin-bottom:6px; color:#334155;">Optional message</label>
@@ -958,7 +583,7 @@
         <!-- Custom Cards Tab -->
         <div id="cards" class="tab-content">
             <div class="card">
-                <h3 style="color: #0f766e; margin-bottom: 20px;">🎨 Create a card</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">🎨 Create a card</h3>
                 <div style="display: grid; gap: 20px;">
                     <div>
                         <label style="display: block; color: #333; font-weight: 600; margin-bottom: 10px;">👤 Send To:</label>
@@ -976,7 +601,7 @@
                 </div>
             </div>
             <div class="card" style="margin-top: 20px;">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">📩 Your Received Cards</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">📩 Your Received Cards</h3>
                 <div id="receivedCards"></div>
             </div>
         </div>
@@ -984,7 +609,7 @@
         <!-- Messages Tab -->
         <div id="messages" class="tab-content">
             <div class="card">
-                <h3 style="color: #0f766e; margin-bottom: 8px;">💬 Inbox</h3>
+                <h3 style="color: #0891b2; margin-bottom: 8px;">💬 Inbox</h3>
                 <p style="color:#64748b;margin-bottom:14px;font-size:0.92em;">Messaging requires an accepted connection request.</p>
                 <div id="conversationsList" style="margin-bottom:18px;"></div>
                 <div>
@@ -1008,7 +633,7 @@
         <!-- Upgrade / monetization Tab -->
         <div id="upgrade" class="tab-content">
             <div class="card">
-                <h3 style="color: #0f766e; margin-bottom: 8px;">⭐ Premium &amp; Boosts</h3>
+                <h3 style="color: #0891b2; margin-bottom: 8px;">⭐ Premium &amp; Boosts</h3>
                 <p style="color:#64748b;margin-bottom:16px;">Support the platform and get more visibility. Payments go securely through Stripe.</p>
                 <div id="upgradeBillingBanner" style="display:none;padding:12px;border-radius:10px;margin-bottom:14px;font-weight:600;"></div>
                 <div class="grid-2" id="upgradeCards">
@@ -1020,7 +645,7 @@
         <!-- Settings Tab -->
         <div id="settings" class="tab-content">
             <div class="card">
-                <h3 style="color: #ff1744; margin-bottom: 20px;">⚙️ Settings</h3>
+                <h3 style="color: #0891b2; margin-bottom: 20px;">⚙️ Settings</h3>
 
                 <!-- Email Notifications Section -->
                 <div class="settings-section">
@@ -1188,18 +813,18 @@
 
         function displayProfile() {
             const container = document.getElementById('profileContainer');
-            const profileImg = currentUser.profile_picture || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="%23f0f0f0" width="200" height="200"/><text x="100" y="100" text-anchor="middle" dy=".3em" font-size="60" fill="%23999">👤</text></svg>';
+            const profileImg = currentUser.profile_picture || 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ecfeff"/><stop offset="1" stop-color="#e2e8f0"/></linearGradient></defs><rect fill="url(#g)" width="200" height="200"/><circle cx="100" cy="78" r="36" fill="#94a3b8"/><ellipse cx="100" cy="160" rx="58" ry="40" fill="#94a3b8"/></svg>');
             
             container.innerHTML = `
                 <div class="profile-picture-upload">
-                    <img src="${profileImg}" class="profile-picture-img" id="profileImg">
-                    <label class="picture-upload-label" title="Upload Profile Picture">📷</label>
+                    <img src="${profileImg}" class="profile-picture-img" id="profileImg" alt="Profile">
+                    <label class="picture-upload-label" for="pictureInput" title="Upload Profile Picture">📷</label>
                     <input type="file" id="pictureInput" accept="image/*" onchange="uploadProfilePicture()">
                 </div>
                 <div class="profile-info">
                     <h2>${currentUser.username}
-                        ${currentUser.is_premium ? '<span style="font-size:0.55em;vertical-align:middle;background:#0f766e;color:#fff;padding:3px 8px;border-radius:999px;margin-left:6px;">Premium</span>' : ''}
-                        ${currentUser.is_boosted ? '<span style="font-size:0.55em;vertical-align:middle;background:#c2410c;color:#fff;padding:3px 8px;border-radius:999px;margin-left:6px;">Boosted</span>' : ''}
+                        ${currentUser.is_premium ? '<span style="font-size:0.55em;vertical-align:middle;background:#0891b2;color:#fff;padding:3px 8px;border-radius:999px;margin-left:6px;">Premium</span>' : ''}
+                        ${currentUser.is_boosted ? '<span style="font-size:0.55em;vertical-align:middle;background:#f97316;color:#fff;padding:3px 8px;border-radius:999px;margin-left:6px;">Boosted</span>' : ''}
                     </h2>
                     <p>📧 ${currentUser.email}</p>
                     <p style="opacity: 0.7;">Joined ${new Date(currentUser.created_at).toLocaleDateString()}</p>
@@ -1227,7 +852,7 @@
                     <div class="bio-section" style="margin-top: 10px;">
                         <label style="display: block; color: #333; font-weight: 600; margin-bottom: 5px;">Theme</label>
                         <div class="theme-selector">
-                            <div class="theme-option ${currentUser.theme === 'default' ? 'selected' : ''}" onclick="selectTheme('default')" style="background: linear-gradient(135deg, #ff1744 0%, #f50057 100%);">Default</div>
+                            <div class="theme-option ${currentUser.theme === 'default' ? 'selected' : ''}" onclick="selectTheme('default')" style="background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%);">Default</div>
                             <div class="theme-option ${currentUser.theme === 'dark' ? 'selected' : ''}" onclick="selectTheme('dark')" style="background: linear-gradient(135deg, #333 0%, #000 100%); color: white;">Dark</div>
                             <div class="theme-option ${currentUser.theme === 'light' ? 'selected' : ''}" onclick="selectTheme('light')" style="background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);">Light</div>
                         </div>
@@ -1460,8 +1085,8 @@
                     container.innerHTML = '<p style="text-align: center; color: #999;">No one has liked you yet 💔</p>';
                 } else {
                     container.innerHTML = likeNotifs.map(notif => `
-                        <div style="background: rgba(255, 23, 68, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #ff1744;">
-                            <div style="font-weight: 600; color: #ff1744;">${notif.from} ${notif.message}</div>
+                        <div style="background: rgba(255, 23, 68, 0.1); padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #0891b2;">
+                            <div style="font-weight: 600; color: #0891b2;">${notif.from} ${notif.message}</div>
                             <div style="color: #999; font-size: 0.85em; margin-top: 5px;">${new Date(notif.created_at).toLocaleString()}</div>
                         </div>
                     `).join('');
@@ -1482,7 +1107,7 @@
                 } else {
                     const icons = { follow: '👥', like: '💕', request: '💌', message: '💬' };
                     container.innerHTML = notifications.map(notif => `
-                        <div style="background: ${notif.read ? '#f5f5f5' : '#ffe0e0'}; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #ff1744;">
+                        <div style="background: ${notif.read ? '#f5f5f5' : '#ffe0e0'}; padding: 15px; border-radius: 10px; margin-bottom: 10px; border-left: 4px solid #0891b2;">
                             <div style="font-weight: 600; color: #333;">${icons[notif.type] || '🔔'} ${notif.message}</div>
                             <div style="color: #999; font-size: 0.85em; margin-top: 5px;">${new Date(notif.created_at).toLocaleString()}</div>
                         </div>
@@ -1921,7 +1546,7 @@
                         <div class="gift-emoji">${gift.emoji}</div>
                         <h3>${gift.name}</h3>
                         <p>${gift.description}</p>
-                        <p style="color: #0f766e; font-weight: 700; margin-top: 10px; font-size:1.1em;">${gift.price}</p>
+                        <p style="color: #0891b2; font-weight: 700; margin-top: 10px; font-size:1.1em;">${gift.price}</p>
                         <button class="btn-primary" style="width:100%; margin-top:14px;" onclick="openGiftModalById(${gift.id})">Buy &amp; Send</button>
                     </div>
                 `).join('');
@@ -2068,7 +1693,7 @@
                     <button onclick="openConversation('${c.username}')" style="width:100%;text-align:left;padding:12px;margin-bottom:8px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;">
                         <div style="display:flex;justify-content:space-between;gap:8px;">
                             <strong>@${c.username}</strong>
-                            ${c.unread ? `<span style="background:#0f766e;color:#fff;border-radius:999px;padding:2px 8px;font-size:0.8em;">${c.unread}</span>` : ''}
+                            ${c.unread ? `<span style="background:#0891b2;color:#fff;border-radius:999px;padding:2px 8px;font-size:0.8em;">${c.unread}</span>` : ''}
                         </div>
                         <div style="color:#64748b;font-size:0.9em;margin-top:4px;">${(c.last_message || '').replace(/</g,'&lt;')}</div>
                     </button>
@@ -2557,7 +2182,7 @@
                     <div class="gift-card" style="text-align:left;">
                         <div class="gift-emoji">👑</div>
                         <h3>Premium ${prem.active ? '✓ Active' : ''}</h3>
-                        <p style="font-weight:700;color:#0f766e;font-size:1.2em;">${prem.price} / ${prem.days} days</p>
+                        <p style="font-weight:700;color:#0891b2;font-size:1.2em;">${prem.price} / ${prem.days} days</p>
                         <ul style="color:#64748b;margin:12px 0 16px 18px;">${(prem.benefits||[]).map(b=>`<li>${b}</li>`).join('')}</ul>
                         ${prem.until ? `<p style="font-size:0.85em;color:#64748b;">Active until ${new Date(prem.until).toLocaleString()}</p>` : ''}
                         <button class="btn-primary" style="width:100%;" onclick="buyPremium()">${prem.active ? 'Extend Premium' : 'Buy Premium'}</button>
@@ -2565,7 +2190,7 @@
                     <div class="gift-card" style="text-align:left;">
                         <div class="gift-emoji">🚀</div>
                         <h3>Profile Boost ${boost.active ? '✓ Live' : ''}</h3>
-                        <p style="font-weight:700;color:#0f766e;font-size:1.2em;">${boost.price} / ${boost.days} days</p>
+                        <p style="font-weight:700;color:#0891b2;font-size:1.2em;">${boost.price} / ${boost.days} days</p>
                         <ul style="color:#64748b;margin:12px 0 16px 18px;">${(boost.benefits||[]).map(b=>`<li>${b}</li>`).join('')}</ul>
                         ${boost.until ? `<p style="font-size:0.85em;color:#64748b;">Boosted until ${new Date(boost.until).toLocaleString()}</p>` : ''}
                         <button class="btn-primary" style="width:100%;" onclick="buyBoost()">${boost.active ? 'Extend Boost' : 'Boost my profile'}</button>
