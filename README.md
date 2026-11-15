@@ -1,6 +1,8 @@
 # TextLink — Connect, Text & Send Gifts
 
-Production messaging platform with email confirmation, SQL database, Stripe gifts, inbox, moderation, and account self-service.
+**TextLink** is a messaging and connection platform (not Valentine-themed): chat, connection requests, digital gifts, Premium/Boosts, and admin revenue via Stripe.
+
+Before you host: see **[HOSTING.md](HOSTING.md)**.
 
 ## Features
 

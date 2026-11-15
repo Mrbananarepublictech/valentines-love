@@ -56,7 +56,8 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
 
 _secret = os.getenv('SECRET_KEY')
 if IS_PRODUCTION and (not _secret or _secret in (
-    'your_secret_key_here', 'valentine_secret_2026', 'valentine_secret_2026_dev', 'dev-only-insecure-textlink-key'
+    'your_secret_key_here', 'valentine_secret_2026', 'valentine_secret_2026_dev',
+    'dev-only-insecure-textlink-key', 'textlink_change_me',
 )):
     raise RuntimeError('Set a strong SECRET_KEY before running in production.')
 app.secret_key = _secret or 'dev-only-insecure-textlink-key'
@@ -2139,7 +2140,6 @@ def get_admin_stats():
         by_kind[p.kind] = by_kind.get(p.kind, 0) + (p.amount_cents or 0)
     return jsonify({
         'total_users': db.scalar(select(func.count()).select_from(User)) or 0,
-        'total_valentine_requests': db.scalar(select(func.count()).select_from(ConnectionRequest)) or 0,
         'total_connection_requests': db.scalar(select(func.count()).select_from(ConnectionRequest)) or 0,
         'total_messages': db.scalar(select(func.count()).select_from(Message)) or 0,
         'total_cards': db.scalar(select(func.count()).select_from(Card)) or 0,
